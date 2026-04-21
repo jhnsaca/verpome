@@ -4,1082 +4,1338 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Verpome Studio — Visual Intelligence</title>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&family=Jost:wght@200;300;400;500&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400;1,600&family=Jost:wght@100;200;300;400&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
 <style>
+/* ═══════════════════════════════════════════
+   RESET & VARS
+═══════════════════════════════════════════ */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --green:#093A22;--green2:#1B4A2E;--green3:#2a6642;
-  --cream:#F4F1EB;--cream2:#e8e4dc;
-  --metal:#8D8880;--gold:#c9a96e;
+  --g0:#020806; --g1:#051209; --g2:#093A22; --g3:#1B4A2E; --g4:#2a6642;
+  --cream:#F4F1EB; --cream2:rgba(244,241,235,.55); --cream3:rgba(244,241,235,.25);
+  --gold:#C9A96E; --gold2:rgba(201,169,110,.35);
+  --studio:#C8864A; --house:#4A8ABF; --consulting:#2A6642;
 }
-html{overflow-x:hidden;scroll-behavior:smooth}
+html{scroll-behavior:auto;overflow-x:hidden}
 body{
-  background:#071510;
+  background:var(--g0);
   color:var(--cream);
   font-family:'Jost',sans-serif;
   font-weight:300;
   cursor:none;
   overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
 }
 
-/* ── CURSOR ── */
-#cursor{
-  position:fixed;width:10px;height:10px;border-radius:50%;
-  background:var(--cream);pointer-events:none;z-index:9999;
-  transform:translate(-50%,-50%);mix-blend-mode:difference;
-  transition:width .3s cubic-bezier(.16,1,.3,1),height .3s cubic-bezier(.16,1,.3,1);
-}
-#cursor-ring{
-  position:fixed;width:40px;height:40px;
-  border:1px solid rgba(244,241,235,.3);border-radius:50%;
-  pointer-events:none;z-index:9998;transform:translate(-50%,-50%);
-  transition:width .4s cubic-bezier(.16,1,.3,1),height .4s cubic-bezier(.16,1,.3,1),border-color .3s;
-}
-#cursor-label{
-  position:fixed;font-family:'Jost',sans-serif;font-size:8px;letter-spacing:.2em;text-transform:uppercase;
-  color:var(--cream);pointer-events:none;z-index:9997;opacity:0;
-  transform:translate(16px,-50%);white-space:nowrap;transition:opacity .3s;
-}
-body.hovering #cursor{width:5px;height:5px}
-body.hovering #cursor-ring{width:64px;height:64px;border-color:rgba(244,241,235,.55)}
-body.hovering #cursor-label{opacity:1}
+/* ═══════════════════════════════════════════
+   CURSOR
+═══════════════════════════════════════════ */
+#cur,#cur-r{position:fixed;pointer-events:none;z-index:9999;border-radius:50%;transform:translate(-50%,-50%)}
+#cur{width:6px;height:6px;background:var(--cream);mix-blend-mode:difference;transition:width .2s,height .2s}
+#cur-r{width:32px;height:32px;border:1px solid rgba(244,241,235,.28);z-index:9998;transition:width .35s cubic-bezier(.16,1,.3,1),height .35s cubic-bezier(.16,1,.3,1),border-color .3s}
+body.hov #cur{width:4px;height:4px}
+body.hov #cur-r{width:56px;height:56px;border-color:rgba(244,241,235,.5)}
 
-/* ── CANVAS BG ── */
-#bg-canvas{position:fixed;inset:0;z-index:0;pointer-events:none;}
-
-/* ── GRAIN ── */
-.grain{
-  position:fixed;inset:0;z-index:700;pointer-events:none;opacity:.65;
-  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.05'/%3E%3C/svg%3E");
+/* ═══════════════════════════════════════════
+   GRAIN
+═══════════════════════════════════════════ */
+#grain{
+  position:fixed;inset:0;z-index:800;pointer-events:none;opacity:.55;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)' opacity='.055'/%3E%3C/svg%3E");
 }
 
-/* ── PRELOADER ── */
-#preloader{
-  position:fixed;inset:0;z-index:9000;
-  background:#071510;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:32px;
+/* ═══════════════════════════════════════════
+   LOADER
+═══════════════════════════════════════════ */
+#loader{
+  position:fixed;inset:0;z-index:9000;background:var(--g0);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:40px;
 }
-.pre-tag{
-  font-size:8px;letter-spacing:.45em;text-transform:uppercase;
-  color:rgba(244,241,235,.28);margin-bottom:8px;
+.ld-eyebrow{font-size:7px;letter-spacing:.5em;text-transform:uppercase;color:var(--cream3);margin-bottom:-24px}
+.ld-word{
+  font-family:'Cormorant Garamond',serif;
+  font-size:clamp(52px,12vw,120px);font-weight:300;letter-spacing:.25em;
+  color:var(--cream);display:flex;overflow:hidden;
 }
-.pre-logo{
-  font-family:'Playfair Display',serif;
-  font-size:clamp(40px,9vw,88px);font-weight:300;letter-spacing:.35em;
-  color:var(--cream);overflow:hidden;display:flex;
-}
-.pre-logo span{display:inline-block;transform:translateY(110%)}
-.pre-bar-wrap{width:180px;height:1px;background:rgba(244,241,235,.1)}
-.pre-bar{height:100%;background:var(--cream);width:0%;transition:width .1s linear}
-.pre-pct{font-size:8px;letter-spacing:.32em;color:rgba(244,241,235,.32)}
-.pre-studio{
-  font-size:9px;letter-spacing:.4em;text-transform:uppercase;
-  color:rgba(244,241,235,.2);
-}
+.ld-word span{display:inline-block;transform:translateY(110%)}
+.ld-line{width:1px;height:0;background:linear-gradient(to bottom,var(--cream),transparent);transition:height .8s ease}
+.ld-bar-w{width:120px;height:1px;background:rgba(244,241,235,.08)}
+.ld-bar{height:100%;width:0;background:var(--cream);transition:width .1s linear}
+.ld-pct{font-size:7px;letter-spacing:.4em;color:var(--cream3);font-variant-numeric:tabular-nums}
 
-/* ── NAV ── */
+/* ═══════════════════════════════════════════
+   NAV
+═══════════════════════════════════════════ */
 nav{
-  position:fixed;top:0;left:0;right:0;z-index:800;
-  padding:32px 60px;
+  position:fixed;top:0;left:0;right:0;z-index:700;
+  padding:28px 56px;
   display:flex;justify-content:space-between;align-items:center;
+  mix-blend-mode:difference;
 }
 .nav-logo{
-  font-family:'Playfair Display',serif;font-size:12px;letter-spacing:.5em;text-transform:uppercase;
-  color:var(--cream);opacity:0;
+  font-family:'Cormorant Garamond',serif;font-weight:300;
+  font-size:13px;letter-spacing:.45em;text-transform:uppercase;
+  color:var(--cream);opacity:0;text-decoration:none;cursor:none;
 }
-.nav-links{display:flex;gap:40px;list-style:none}
+.nav-r{display:flex;gap:36px;align-items:center}
+.nav-links{display:flex;gap:36px;list-style:none}
 .nav-links a{
-  font-size:8px;letter-spacing:.22em;text-transform:uppercase;
-  color:rgba(244,241,235,.38);text-decoration:none;cursor:none;transition:color .3s;
+  font-size:7px;letter-spacing:.25em;text-transform:uppercase;
+  color:rgba(244,241,235,.4);text-decoration:none;cursor:none;transition:color .3s;
 }
 .nav-links a:hover{color:var(--cream)}
+.nav-cta{
+  font-size:7px;letter-spacing:.22em;text-transform:uppercase;
+  color:var(--cream);border:1px solid rgba(244,241,235,.22);
+  padding:10px 20px;text-decoration:none;cursor:none;
+  transition:border-color .4s;
+}
+.nav-cta:hover{border-color:var(--cream)}
 
-/* ── HERO — mirrored from main verpome site ── */
+/* ═══════════════════════════════════════════
+   HERO
+═══════════════════════════════════════════ */
 #hero{
-  position:relative;min-height:100vh;z-index:5;
-  display:flex;flex-direction:column;justify-content:flex-end;
-  padding:0 10vw 8vh;
-  /* Studio atmosphere: scanlines overlay */
-}
-/* Studio HUD lines — subtle monitor effect */
-#hero::before{
-  content:'';position:absolute;inset:0;pointer-events:none;z-index:2;
-  background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(244,241,235,.008) 3px,rgba(244,241,235,.008) 4px);
-}
-/* Corner brackets */
-#hero::after{
-  content:'';position:absolute;
-  top:80px;left:10vw;right:10vw;bottom:8vh;
-  border:1px solid rgba(244,241,235,.04);
-  pointer-events:none;z-index:2;
+  position:relative;height:100vh;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  overflow:hidden;
 }
 
-.hero-studio-badge{
-  position:absolute;top:120px;right:10vw;z-index:3;
-  display:flex;align-items:center;gap:10px;
+/* Leather BG */
+#hero-bg{
+  position:absolute;inset:0;z-index:0;
+  background:
+    radial-gradient(ellipse at 50% 35%,rgba(27,74,46,.4) 0%,transparent 65%),
+    url('https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1920&q=85') center/cover;
+  filter:brightness(.22) saturate(1.6) hue-rotate(-8deg);
+  transform:scale(1.05);
+}
+#hero-bg::after{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse at 50% 50%,rgba(9,58,34,.3) 0%,rgba(2,8,6,.9) 70%);
+}
+
+/* Scanlines subtle */
+#hero::before{
+  content:'';position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(244,241,235,.006) 2px,rgba(244,241,235,.006) 3px);
+}
+
+/* HUD corners */
+.hud-corner{
+  position:absolute;z-index:3;width:24px;height:24px;
   opacity:0;
 }
-.hero-badge-dot{
-  width:6px;height:6px;border-radius:50%;background:var(--gold);
-  animation:badgePulse 2.5s ease-in-out infinite;
-}
-@keyframes badgePulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
-.hero-badge-txt{font-size:8px;letter-spacing:.28em;text-transform:uppercase;color:rgba(244,241,235,.35)}
+.hud-corner.tl{top:80px;left:56px;border-top:1px solid rgba(244,241,235,.18);border-left:1px solid rgba(244,241,235,.18)}
+.hud-corner.tr{top:80px;right:56px;border-top:1px solid rgba(244,241,235,.18);border-right:1px solid rgba(244,241,235,.18)}
+.hud-corner.bl{bottom:60px;left:56px;border-bottom:1px solid rgba(244,241,235,.18);border-left:1px solid rgba(244,241,235,.18)}
+.hud-corner.br{bottom:60px;right:56px;border-bottom:1px solid rgba(244,241,235,.18);border-right:1px solid rgba(244,241,235,.18)}
 
+/* Aperture / lens symbol — the eye of the studio */
+#aperture{
+  position:relative;z-index:4;
+  width:160px;height:160px;
+  margin-bottom:40px;opacity:0;transform:scale(.7);
+}
+#aperture canvas{width:160px;height:160px}
+
+/* Hero text */
 .hero-eyebrow{
-  font-size:8px;letter-spacing:.42em;text-transform:uppercase;
-  color:rgba(244,241,235,.32);margin-bottom:32px;
-  opacity:0;transform:translateY(16px);position:relative;z-index:3;
+  position:relative;z-index:4;
+  font-size:7px;letter-spacing:.5em;text-transform:uppercase;
+  color:rgba(244,241,235,.3);margin-bottom:24px;
+  opacity:0;transform:translateY(10px);
 }
-
 .hero-title{
-  font-family:'Playfair Display',serif;
-  font-size:clamp(72px,12vw,172px);
-  font-weight:300;line-height:.92;letter-spacing:-.015em;
-  margin-bottom:52px;position:relative;z-index:3;
+  position:relative;z-index:4;
+  font-family:'Cormorant Garamond',serif;
+  font-size:clamp(52px,9vw,130px);
+  font-weight:300;line-height:.9;letter-spacing:-.01em;
+  text-align:center;margin-bottom:36px;
 }
 .hero-title .line{overflow:hidden;display:block}
 .hero-title .line span{display:block;transform:translateY(110%)}
-.hero-title .outline{-webkit-text-stroke:1px var(--cream);color:transparent}
-
-/* Timecode — studio aesthetic */
-.hero-timecode{
-  position:absolute;bottom:8vh;right:10vw;z-index:3;
-  font-family:'Jost',sans-serif;font-size:9px;letter-spacing:.15em;
-  color:rgba(244,241,235,.18);opacity:0;
-  font-variant-numeric:tabular-nums;
+.hero-title .stroke{
+  -webkit-text-stroke:1px rgba(244,241,235,.45);
+  color:transparent;
 }
 
-.hero-bottom{
-  display:flex;align-items:flex-end;gap:80px;width:100%;
-  opacity:0;transform:translateY(16px);position:relative;z-index:3;
+.hero-tagline{
+  position:relative;z-index:4;
+  font-size:10px;line-height:2.1;letter-spacing:.12em;
+  color:rgba(244,241,235,.32);text-align:center;
+  text-transform:uppercase;
+  opacity:0;transform:translateY(8px);
+  margin-bottom:52px;
 }
-.hero-desc{
-  font-size:11px;line-height:2;letter-spacing:.04em;
-  color:rgba(244,241,235,.45);max-width:320px;
-}
-.hero-cta{
-  display:inline-flex;align-items:center;gap:14px;
-  font-size:8px;letter-spacing:.22em;text-transform:uppercase;
-  color:var(--cream);border:1px solid rgba(244,241,235,.2);
-  padding:15px 30px;text-decoration:none;cursor:none;
-  transition:border-color .4s,gap .4s;
-}
-.hero-cta:hover{border-color:var(--cream);gap:22px}
-.hero-scroll{margin-left:auto;display:flex;flex-direction:column;align-items:center;gap:10px}
-.hero-scroll-line{
-  width:1px;height:52px;
-  background:linear-gradient(to bottom,rgba(244,241,235,.6),transparent);
-  animation:scrollLine 2.4s ease-in-out infinite;
-}
-@keyframes scrollLine{0%,100%{opacity:.7;transform:scaleY(1)}50%{opacity:.2;transform:scaleY(.5)}}
-.hero-scroll-txt{font-size:7px;letter-spacing:.3em;text-transform:uppercase;color:rgba(244,241,235,.25);writing-mode:vertical-lr}
 
-/* ── MARQUEE ── */
+/* Scroll indicator */
+.hero-scroll{
+  position:absolute;bottom:40px;left:50%;transform:translateX(-50%);z-index:4;
+  display:flex;flex-direction:column;align-items:center;gap:10px;opacity:0;
+}
+.scroll-line{width:1px;height:48px;background:linear-gradient(to bottom,rgba(244,241,235,.6),transparent);animation:sline 2.2s ease-in-out infinite}
+@keyframes sline{0%,100%{opacity:.7;transform:scaleY(1)}50%{opacity:.2;transform:scaleY(.4)}}
+.scroll-txt{font-size:6px;letter-spacing:.35em;text-transform:uppercase;color:rgba(244,241,235,.22);writing-mode:vertical-lr}
+
+/* Timecode */
+.hero-tc{
+  position:absolute;bottom:44px;right:56px;z-index:4;
+  font-size:8px;letter-spacing:.12em;color:rgba(244,241,235,.15);
+  font-variant-numeric:tabular-nums;opacity:0;
+}
+
+/* ═══════════════════════════════════════════
+   MANIFESTO STRIP
+═══════════════════════════════════════════ */
+#manifesto-strip{
+  position:relative;z-index:5;
+  padding:100px 10vw;
+  display:flex;align-items:center;gap:80px;
+  border-top:1px solid rgba(244,241,235,.05);
+  border-bottom:1px solid rgba(244,241,235,.05);
+  overflow:hidden;
+}
+#manifesto-strip::before{
+  content:'';position:absolute;left:0;top:0;bottom:0;width:3px;
+  background:linear-gradient(to bottom,transparent,var(--gold),transparent);
+}
+.ms-number{
+  font-family:'Cormorant Garamond',serif;
+  font-size:clamp(80px,14vw,180px);font-weight:300;
+  color:rgba(244,241,235,.04);line-height:1;flex-shrink:0;
+  letter-spacing:-.02em;
+}
+.ms-text{flex:1}
+.ms-quote{
+  font-family:'Cormorant Garamond',serif;font-style:italic;
+  font-size:clamp(22px,3.5vw,46px);font-weight:300;
+  line-height:1.35;color:rgba(244,241,235,.7);
+  margin-bottom:20px;
+}
+.ms-attr{font-size:8px;letter-spacing:.32em;text-transform:uppercase;color:var(--cream3)}
+
+/* ═══════════════════════════════════════════
+   MARQUEE
+═══════════════════════════════════════════ */
 .marquee-wrap{
   position:relative;z-index:5;overflow:hidden;
-  border-top:1px solid rgba(244,241,235,.07);
-  border-bottom:1px solid rgba(244,241,235,.07);
-  padding:18px 0;background:rgba(244,241,235,.015);
-}
-.marquee-track{display:flex;animation:marqueeRun 30s linear infinite;white-space:nowrap}
-.marquee-item{
-  font-family:'Playfair Display',serif;font-style:italic;
-  font-size:clamp(13px,1.6vw,19px);color:rgba(244,241,235,.2);
-  padding:0 44px;letter-spacing:.04em;flex-shrink:0;
-}
-.marquee-dot{color:var(--gold);font-style:normal;opacity:.55}
-@keyframes marqueeRun{from{transform:translateX(0)}to{transform:translateX(-50%)}}
-
-/* ── SECTION BASE ── */
-section{position:relative;z-index:5}
-.section-label{font-size:8px;letter-spacing:.42em;text-transform:uppercase;color:rgba(244,241,235,.25);margin-bottom:20px}
-
-/* ── FOUNDER ── */
-#founder{padding:160px 10vw;display:grid;grid-template-columns:1fr 1fr;gap:100px;align-items:center}
-
-.founder-title{
-  font-family:'Playfair Display',serif;
-  font-size:clamp(42px,5.5vw,78px);font-weight:300;line-height:1.05;margin-bottom:28px;
-}
-.founder-title em{font-style:italic;color:rgba(244,241,235,.4)}
-.founder-text{font-size:11px;line-height:2.1;color:rgba(244,241,235,.52);max-width:440px}
-.founder-text+.founder-text{margin-top:18px}
-
-/* Countries strip — replaces stats */
-.founder-countries{
-  display:flex;flex-wrap:wrap;gap:8px;margin-top:44px;
-}
-.country-tag{
-  font-size:8px;letter-spacing:.22em;text-transform:uppercase;
-  border:1px solid rgba(244,241,235,.12);padding:8px 14px;
-  color:rgba(244,241,235,.38);position:relative;overflow:hidden;
-  transition:border-color .4s,color .4s;cursor:none;
-}
-.country-tag::before{
-  content:'';position:absolute;inset:0;
-  background:rgba(244,241,235,.04);transform:translateX(-100%);
-  transition:transform .4s cubic-bezier(.16,1,.3,1);
-}
-.country-tag:hover{border-color:rgba(244,241,235,.35);color:var(--cream)}
-.country-tag:hover::before{transform:none}
-
-.founder-right{
-  display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;
-  gap:12px;height:500px;
-}
-.founder-img{position:relative;overflow:hidden;background:rgba(244,241,235,.04)}
-.founder-img:first-child{
-  grid-row:span 2;
-  clip-path:polygon(0 0,100% 5%,100% 100%,0 95%);
-}
-.founder-img:nth-child(2){clip-path:polygon(0 0,100% 0,100% 100%,6% 100%)}
-.founder-img:nth-child(3){clip-path:polygon(6% 0,100% 0,100% 100%,0 100%)}
-.founder-img-inner{
-  position:absolute;inset:0;display:flex;align-items:flex-end;padding:18px;
-  background:linear-gradient(to top,rgba(7,21,16,.7) 0%,transparent 60%);
-}
-.founder-img-tag{font-size:7px;letter-spacing:.2em;text-transform:uppercase;color:rgba(244,241,235,.42)}
-/* Placeholder city backgrounds */
-.city-bkk{background:radial-gradient(ellipse at 40% 60%,rgba(27,74,46,.55),rgba(7,21,16,.95)),repeating-linear-gradient(45deg,transparent,transparent 2px,rgba(244,241,235,.012) 2px,rgba(244,241,235,.012) 4px)}
-.city-paris{background:radial-gradient(ellipse at 60% 35%,rgba(141,136,128,.22),rgba(7,21,16,.95)),repeating-linear-gradient(-45deg,transparent,transparent 3px,rgba(244,241,235,.008) 3px,rgba(244,241,235,.008) 6px)}
-.city-brasil{background:radial-gradient(ellipse at 30% 65%,rgba(201,169,110,.14),rgba(7,21,16,.95)),repeating-linear-gradient(0deg,transparent,transparent 4px,rgba(244,241,235,.01) 4px,rgba(244,241,235,.01) 8px)}
-.city-usa{background:radial-gradient(ellipse at 55% 45%,rgba(42,102,66,.3),rgba(7,21,16,.95)),repeating-linear-gradient(60deg,transparent,transparent 3px,rgba(244,241,235,.01) 3px,rgba(244,241,235,.01) 5px)}
-
-/* ── SERVICES ── */
-#services{padding:160px 10vw;background:rgba(0,0,0,.2)}
-.services-header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:80px}
-.services-title{font-family:'Playfair Display',serif;font-size:clamp(36px,5vw,64px);font-weight:300;line-height:1.05}
-.services-title em{font-style:italic}
-.services-sub{font-size:11px;color:rgba(244,241,235,.35);max-width:260px;line-height:1.9;text-align:right}
-.services-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:rgba(244,241,235,.05)}
-.service-card{
-  background:#071510;padding:56px 44px;position:relative;overflow:hidden;
-  cursor:none;transition:background .5s;
-}
-.service-card::after{
-  content:'';position:absolute;inset:0;
-  background:linear-gradient(135deg,transparent,rgba(201,169,110,.05));
-  opacity:0;transition:opacity .5s;
-}
-.service-card:hover{background:#0a1e12}
-.service-card:hover::after{opacity:1}
-.service-num{font-family:'Playfair Display',serif;font-size:10px;letter-spacing:.3em;color:rgba(244,241,235,.18);margin-bottom:44px;display:block}
-.service-icon{width:40px;height:1px;background:var(--gold);margin-bottom:28px;transition:width .5s cubic-bezier(.16,1,.3,1)}
-.service-card:hover .service-icon{width:72px}
-.service-name{font-family:'Playfair Display',serif;font-size:clamp(22px,2.5vw,34px);font-weight:300;line-height:1.1;margin-bottom:16px}
-.service-name em{font-style:italic;color:rgba(244,241,235,.45)}
-.service-desc{font-size:10px;line-height:2;color:rgba(244,241,235,.38);margin-bottom:40px}
-.service-list{list-style:none}
-.service-list li{
-  font-size:9px;letter-spacing:.12em;color:rgba(244,241,235,.28);
-  padding:9px 0;border-bottom:1px solid rgba(244,241,235,.04);
-  display:flex;align-items:center;gap:10px;
-}
-.service-list li::before{content:'';display:block;width:3px;height:3px;border-radius:50%;background:var(--gold);opacity:.5;flex-shrink:0}
-
-/* ── PORTFOLIO ── */
-#portfolio{padding:160px 10vw}
-.portfolio-header{display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:end;margin-bottom:64px}
-.portfolio-title{font-family:'Playfair Display',serif;font-size:clamp(36px,5vw,64px);font-weight:300;line-height:1.05}
-.portfolio-title em{font-style:italic}
-
-/* Tab system — functional */
-.portfolio-tabs{display:flex;flex-direction:column;gap:8px;justify-content:flex-end;align-items:flex-end}
-.tab-btn{
-  font-size:8px;letter-spacing:.22em;text-transform:uppercase;
-  color:rgba(244,241,235,.25);background:none;border:none;
-  cursor:none;padding:6px 0;position:relative;transition:color .3s;
-  display:flex;align-items:center;gap:10px;
-}
-.tab-btn::after{
-  content:'';display:block;
-  height:1px;width:0;background:var(--cream);
-  transition:width .4s cubic-bezier(.16,1,.3,1);
-}
-.tab-btn.active,.tab-btn:hover{color:var(--cream)}
-.tab-btn.active::after{width:28px}
-.tab-btn:hover::after{width:16px}
-
-/* Portfolio panels */
-.portfolio-panel{display:none}
-.portfolio-panel.active{display:block}
-
-/* Film / Reel grid */
-.reel-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-.reel-item{
-  position:relative;overflow:hidden;cursor:none;
-  background:rgba(244,241,235,.04);aspect-ratio:9/16;
-  transition:transform .4s cubic-bezier(.16,1,.3,1);
-}
-.reel-item:first-child{grid-column:span 2;aspect-ratio:16/9}
-.reel-item:hover{transform:scale(.98)}
-
-/* mockup frame — "phone/monitor" border */
-.reel-frame{
-  position:absolute;inset:0;
-  border:1px solid rgba(244,241,235,.06);
-  pointer-events:none;z-index:2;
-}
-/* play button */
-.reel-play{
-  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:3;
-  width:48px;height:48px;border-radius:50%;
-  border:1px solid rgba(244,241,235,.3);
-  display:flex;align-items:center;justify-content:center;
-  opacity:0;transition:opacity .3s;
-  background:rgba(7,21,16,.4);backdrop-filter:blur(8px);
-}
-.reel-play svg{width:14px;height:14px;fill:var(--cream);margin-left:3px}
-.reel-item:hover .reel-play{opacity:1}
-.reel-info{
-  position:absolute;bottom:0;left:0;right:0;z-index:3;
-  padding:20px;
-  background:linear-gradient(to top,rgba(7,21,16,.85) 0%,transparent 100%);
-  transform:translateY(8px);opacity:0;
-  transition:all .4s cubic-bezier(.16,1,.3,1);
-}
-.reel-item:hover .reel-info{transform:none;opacity:1}
-.reel-client{font-size:7px;letter-spacing:.22em;text-transform:uppercase;color:rgba(244,241,235,.38);margin-bottom:4px}
-.reel-name{font-family:'Playfair Display',serif;font-size:15px;font-weight:300;color:var(--cream)}
-.reel-type{font-size:8px;letter-spacing:.14em;color:var(--gold);margin-top:3px}
-/* Placeholder BG colors */
-.reel-bg-1{background:radial-gradient(ellipse at 30% 50%,rgba(27,74,46,.5),rgba(7,21,16,.95))}
-.reel-bg-2{background:radial-gradient(ellipse at 60% 40%,rgba(141,136,128,.18),rgba(7,21,16,.95))}
-.reel-bg-3{background:radial-gradient(ellipse at 40% 60%,rgba(201,169,110,.1),rgba(7,21,16,.95))}
-.reel-bg-4{background:radial-gradient(ellipse at 70% 30%,rgba(27,74,46,.4),rgba(7,21,16,.95))}
-.reel-bg-5{background:radial-gradient(ellipse at 50% 70%,rgba(201,169,110,.12),rgba(7,21,16,.95))}
-
-/* IG mockup grid */
-.ig-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-.ig-card{
-  position:relative;aspect-ratio:4/5;overflow:hidden;cursor:none;
-  background:rgba(244,241,235,.04);
-}
-.ig-card:hover .reel-info{transform:none;opacity:1}
-.ig-overlay{
-  position:absolute;inset:0;
-  background:linear-gradient(to top,rgba(7,21,16,.6) 0%,transparent 60%);
-  opacity:0;transition:opacity .4s;
-}
-.ig-card:hover .ig-overlay{opacity:1}
-.ig-info{
-  position:absolute;bottom:0;left:0;right:0;padding:16px;z-index:2;
-  opacity:0;transform:translateY(6px);
-  transition:all .35s cubic-bezier(.16,1,.3,1);
-}
-.ig-card:hover .ig-info{opacity:1;transform:none}
-.ig-handle{font-size:8px;letter-spacing:.15em;color:rgba(244,241,235,.6)}
-.ig-metric{font-family:'Playfair Display',serif;font-size:18px;color:var(--cream)}
-.ig-bg-1{background:radial-gradient(ellipse at 40% 40%,rgba(42,102,66,.4),rgba(7,21,16,.95))}
-.ig-bg-2{background:radial-gradient(ellipse at 60% 60%,rgba(141,136,128,.2),rgba(7,21,16,.95))}
-.ig-bg-3{background:radial-gradient(ellipse at 30% 70%,rgba(201,169,110,.14),rgba(7,21,16,.95))}
-.ig-bg-4{background:radial-gradient(ellipse at 70% 30%,rgba(27,74,46,.3),rgba(7,21,16,.95))}
-
-/* Web portfolio */
-.web-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-.web-card{position:relative;overflow:hidden;cursor:none;background:rgba(244,241,235,.04)}
-.web-card:first-child{grid-column:span 2;aspect-ratio:16/6}
-.web-card:not(:first-child){aspect-ratio:16/9}
-/* Browser chrome mockup */
-.browser-chrome{
-  background:rgba(244,241,235,.05);
+  border-top:1px solid rgba(244,241,235,.06);
   border-bottom:1px solid rgba(244,241,235,.06);
-  padding:10px 14px;display:flex;align-items:center;gap:6px;
+  padding:16px 0;background:rgba(244,241,235,.012);
 }
-.b-dot{width:7px;height:7px;border-radius:50%}
-.b-dot:nth-child(1){background:rgba(255,100,100,.3)}
-.b-dot:nth-child(2){background:rgba(255,200,50,.3)}
-.b-dot:nth-child(3){background:rgba(50,200,100,.3)}
-.browser-url{
-  margin-left:12px;font-size:8px;letter-spacing:.06em;
-  color:rgba(244,241,235,.2);font-family:'Jost',sans-serif;
+.marquee-track{display:flex;animation:mrun 36s linear infinite;white-space:nowrap}
+.marquee-track.rev{animation-direction:reverse;animation-duration:42s}
+.mi{
+  font-family:'Cormorant Garamond',serif;font-style:italic;
+  font-size:clamp(12px,1.4vw,17px);
+  color:rgba(244,241,235,.18);padding:0 40px;letter-spacing:.06em;flex-shrink:0;
 }
-.browser-content{
-  flex:1;position:relative;overflow:hidden;
-}
-.web-card{display:flex;flex-direction:column}
-.web-preview{flex:1;position:relative;overflow:hidden}
-.web-overlay{
-  position:absolute;inset:0;
-  background:linear-gradient(to top,rgba(7,21,16,.75) 0%,transparent 50%);
-  opacity:0;transition:opacity .4s;display:flex;align-items:flex-end;padding:20px;
-}
-.web-card:hover .web-overlay{opacity:1}
-.web-info .web-client{font-size:7px;letter-spacing:.2em;text-transform:uppercase;color:rgba(244,241,235,.4);margin-bottom:4px}
-.web-info .web-name{font-family:'Playfair Display',serif;font-size:18px;font-weight:300;color:var(--cream)}
-.web-info .web-tag{font-size:8px;color:var(--gold);margin-top:3px}
-.web-bg-1{background:radial-gradient(ellipse at 50% 50%,rgba(27,74,46,.4),rgba(7,21,16,.95))}
-.web-bg-2{background:radial-gradient(ellipse at 30% 40%,rgba(42,102,66,.3),rgba(7,21,16,.95))}
-.web-bg-3{background:radial-gradient(ellipse at 70% 60%,rgba(201,169,110,.1),rgba(7,21,16,.95))}
+.md{color:var(--gold);font-style:normal;opacity:.5}
+@keyframes mrun{from{transform:translateX(0)}to{transform:translateX(-50%)}}
 
-/* Placeholder "incoming" notice */
-.assets-notice{
-  margin-top:32px;padding:20px 24px;
-  border:1px solid rgba(244,241,235,.06);
-  display:flex;align-items:center;gap:12px;
+/* ═══════════════════════════════════════════
+   SCROLL SECTIONS — Getty-style narrative
+═══════════════════════════════════════════ */
+.chapter{
+  position:relative;z-index:5;
+  min-height:100vh;
+  display:flex;align-items:center;
+  overflow:hidden;
 }
-.assets-dot{width:5px;height:5px;border-radius:50%;background:var(--gold);flex-shrink:0;animation:badgePulse 2s ease-in-out infinite}
-.assets-txt{font-size:9px;letter-spacing:.14em;color:rgba(244,241,235,.28)}
 
-/* ── TESTIMONIAL ── */
-#testimonial{
-  padding:100px 10vw;text-align:center;
-  border-top:1px solid rgba(244,241,235,.05);border-bottom:1px solid rgba(244,241,235,.05);
+/* Full-bleed image */
+.ch-bg{
+  position:absolute;inset:0;z-index:0;
+  background-size:cover;background-position:center;
+  will-change:transform;
 }
-.testimonial-quote{
-  font-family:'Playfair Display',serif;font-style:italic;
-  font-size:clamp(18px,2.8vw,36px);font-weight:300;line-height:1.6;
-  color:rgba(244,241,235,.6);max-width:760px;margin:0 auto 24px;
-}
-.testimonial-attr{font-size:8px;letter-spacing:.3em;text-transform:uppercase;color:rgba(244,241,235,.25)}
+.ch-overlay{position:absolute;inset:0;z-index:1;pointer-events:none}
 
-/* ── CONTACT ── */
-#contact{
-  padding:200px 10vw;text-align:center;position:relative;overflow:hidden;
+/* ── STUDIO ── */
+#ch-studio .ch-bg{
+  background-image:url('https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=1800&q=80');
+  filter:brightness(.3) saturate(1.2);
 }
-#contact::before{
-  content:'';position:absolute;inset:0;
-  background:radial-gradient(ellipse at 50% 50%,rgba(27,74,46,.25) 0%,transparent 65%);
-  pointer-events:none;
-}
-.contact-eyebrow{font-size:8px;letter-spacing:.4em;text-transform:uppercase;color:rgba(244,241,235,.28);margin-bottom:20px}
-.contact-title{
-  font-family:'Playfair Display',serif;
-  font-size:clamp(48px,9vw,130px);font-weight:300;line-height:.92;
-  letter-spacing:-.015em;margin-bottom:52px;position:relative;z-index:1;
-}
-.contact-title .outline{-webkit-text-stroke:1px rgba(244,241,235,.35);color:transparent}
-.contact-email{
-  display:inline-block;font-family:'Playfair Display',serif;font-style:italic;
-  font-size:clamp(14px,1.8vw,22px);color:rgba(244,241,235,.45);
-  text-decoration:none;cursor:none;
-  border-bottom:1px solid rgba(244,241,235,.12);padding-bottom:3px;
-  transition:color .3s,border-color .3s;
-}
-.contact-email:hover{color:var(--cream);border-color:var(--cream)}
+#ch-studio .ch-overlay{background:linear-gradient(125deg,rgba(2,3,2,.85) 0%,rgba(120,60,12,.15) 100%)}
 
-/* ── FOOTER ── */
-footer{
-  padding:36px 60px;display:flex;justify-content:space-between;align-items:center;
-  border-top:1px solid rgba(244,241,235,.05);
+/* ── SOCIAL ── */
+#ch-social .ch-bg{
+  background-image:url('https://images.unsplash.com/photo-1611162616475-46b635cb6868?w=1800&q=80');
+  filter:brightness(.3) saturate(1.1);
 }
-.foot-logo{font-family:'Playfair Display',serif;font-size:10px;letter-spacing:.42em;text-transform:uppercase;color:rgba(244,241,235,.25)}
-.foot-right{font-size:8px;letter-spacing:.14em;color:rgba(244,241,235,.18)}
+#ch-social .ch-overlay{background:linear-gradient(125deg,rgba(2,4,8,.85) 0%,rgba(12,40,100,.2) 100%)}
 
-/* ── REVEAL ── */
-.reveal{opacity:0;transform:translateY(36px)}
-.reveal-left{opacity:0;transform:translateX(-36px)}
-.reveal-scale{opacity:0;transform:scale(.95)}
+/* ── WEB ── */
+#ch-web .ch-bg{
+  background-image:url('https://images.unsplash.com/photo-1486325212027-8081e485255e?w=1800&q=80');
+  filter:brightness(.28) saturate(1.15);
+}
+#ch-web .ch-overlay{background:linear-gradient(125deg,rgba(2,4,2,.85) 0%,rgba(9,58,34,.25) 100%)}
 
-/* ── VIDEO LIGHTBOX ── */
-#lightbox{
-  position:fixed;inset:0;z-index:8000;background:rgba(7,21,16,.96);
-  display:none;align-items:center;justify-content:center;
+/* ── BACKGROUND (international) ── */
+#ch-world .ch-bg{
+  background-image:url('https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=1800&q=80');
+  filter:brightness(.25) saturate(1.2);
+}
+#ch-world .ch-overlay{background:linear-gradient(125deg,rgba(2,4,2,.8) 0%,rgba(30,80,50,.2) 100%)}
+
+/* Chapter content */
+.ch-inner{
+  position:relative;z-index:5;
+  padding:0 10vw;max-width:760px;
+}
+.ch-inner.right{margin-left:auto;text-align:right}
+.ch-inner.right .ch-line{margin-left:auto}
+.ch-inner.right .ch-tags{justify-content:flex-end}
+
+.ch-num{
+  font-size:7px;letter-spacing:.45em;text-transform:uppercase;
+  color:rgba(244,241,235,.22);margin-bottom:18px;display:block;
+}
+.ch-tag{
+  display:inline-flex;align-items:center;gap:7px;
+  font-size:7px;letter-spacing:.22em;text-transform:uppercase;
+  border:1px solid;padding:7px 14px;margin-bottom:28px;
+}
+#ch-studio .ch-tag{color:var(--studio);border-color:rgba(200,134,74,.3)}
+#ch-social .ch-tag{color:var(--house);border-color:rgba(74,138,191,.3)}
+#ch-web .ch-tag{color:var(--gold);border-color:rgba(201,169,110,.3)}
+#ch-world .ch-tag{color:var(--consulting);border-color:rgba(42,102,66,.3)}
+
+.ch-title{
+  font-family:'Cormorant Garamond',serif;
+  font-size:clamp(44px,7.5vw,108px);
+  font-weight:300;line-height:.92;letter-spacing:-.01em;
+  margin-bottom:28px;
+}
+.ch-title em{font-style:italic;opacity:.45}
+
+.ch-line{
+  width:48px;height:1px;margin-bottom:24px;
+}
+#ch-studio .ch-line{background:var(--studio)}
+#ch-social .ch-line{background:var(--house)}
+#ch-web .ch-line{background:var(--gold)}
+#ch-world .ch-line{background:var(--consulting)}
+
+.ch-desc{
+  font-size:11px;line-height:2.1;
+  color:rgba(244,241,235,.42);
+  max-width:420px;margin-bottom:36px;
+}
+.ch-inner.right .ch-desc{margin-left:auto}
+
+.ch-tags{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:36px}
+.ch-pill{
+  font-size:7px;letter-spacing:.18em;text-transform:uppercase;
+  border:1px solid rgba(244,241,235,.1);padding:6px 12px;
+  color:rgba(244,241,235,.32);
+}
+
+.ch-cta{
+  display:inline-flex;align-items:center;gap:10px;
+  font-size:7px;letter-spacing:.22em;text-transform:uppercase;
+  color:var(--cream);text-decoration:none;cursor:none;
+  border-bottom:1px solid rgba(244,241,235,.18);padding-bottom:2px;
+  transition:gap .4s,border-color .4s;
+}
+.ch-cta:hover{gap:18px;border-color:var(--cream)}
+
+/* Floating visual elements per section */
+.ch-float{
+  position:absolute;z-index:4;pointer-events:none;
+}
+
+/* ── Studio: camera aperture SVG ── */
+#float-studio{
+  right:8vw;top:50%;transform:translateY(-50%);
+  width:280px;height:280px;opacity:0;
+}
+
+/* ── Social: phone mockup ── */
+#float-social{
+  left:8vw;top:50%;transform:translateY(-50%);
+  opacity:0;
+}
+.phone-mock{
+  width:140px;height:280px;
+  border:1px solid rgba(74,138,191,.25);
+  border-radius:20px;
+  background:rgba(2,6,20,.7);
   backdrop-filter:blur(12px);
+  display:flex;flex-direction:column;align-items:center;
+  padding:20px 14px;gap:12px;position:relative;overflow:hidden;
 }
-#lightbox.open{display:flex}
-.lightbox-inner{
-  width:min(90vw,900px);position:relative;
+.phone-mock::before{
+  content:'';position:absolute;inset:0;border-radius:20px;
+  background:linear-gradient(135deg,rgba(74,138,191,.08),transparent);
 }
-.lightbox-close{
-  position:absolute;top:-44px;right:0;
-  font-size:9px;letter-spacing:.28em;text-transform:uppercase;
-  color:rgba(244,241,235,.4);cursor:none;transition:color .3s;
-  background:none;border:none;
-}
-.lightbox-close:hover{color:var(--cream)}
-.lightbox-screen{
-  aspect-ratio:16/9;background:rgba(244,241,235,.04);
-  border:1px solid rgba(244,241,235,.08);
-  display:flex;align-items:center;justify-content:center;
-}
-.lightbox-placeholder{
-  font-family:'Playfair Display',serif;font-style:italic;
-  font-size:14px;color:rgba(244,241,235,.25);letter-spacing:.06em;
+.phone-notch{width:40px;height:5px;border-radius:3px;background:rgba(255,255,255,.08)}
+.phone-ig-row{display:flex;gap:4px;width:100%}
+.phone-ig-cell{flex:1;border-radius:2px;background:rgba(74,138,191,.12);aspect-ratio:1}
+.phone-metric{
+  margin-top:auto;font-family:'Cormorant Garamond',serif;
+  font-size:28px;font-weight:300;color:rgba(74,138,191,.7);
   text-align:center;
 }
-.lightbox-meta{
-  display:flex;justify-content:space-between;align-items:center;
-  padding:16px 0 0;
+.phone-metric-l{font-size:7px;letter-spacing:.2em;text-transform:uppercase;color:rgba(74,138,191,.35)}
+
+/* ── Web: browser frame ── */
+#float-web{
+  right:6vw;top:50%;transform:translateY(-50%);
+  opacity:0;
 }
-.lm-title{font-family:'Playfair Display',serif;font-size:16px;font-weight:300;color:var(--cream)}
-.lm-type{font-size:8px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold)}
+.browser-mock{
+  width:340px;
+  border:1px solid rgba(201,169,110,.2);
+  border-radius:8px;background:rgba(2,4,2,.7);
+  overflow:hidden;backdrop-filter:blur(12px);
+}
+.bm-chrome{
+  background:rgba(201,169,110,.06);
+  border-bottom:1px solid rgba(201,169,110,.1);
+  padding:10px 14px;display:flex;align-items:center;gap:6px;
+}
+.bm-dot{width:7px;height:7px;border-radius:50%}
+.bm-dot:nth-child(1){background:rgba(255,100,80,.3)}
+.bm-dot:nth-child(2){background:rgba(255,190,50,.3)}
+.bm-dot:nth-child(3){background:rgba(80,200,100,.3)}
+.bm-url{margin-left:10px;font-size:7px;letter-spacing:.06em;color:rgba(201,169,110,.28)}
+.bm-content{height:200px;background:linear-gradient(135deg,rgba(9,58,34,.3),rgba(2,4,2,.8));
+  display:flex;align-items:center;justify-content:center;}
+.bm-content-inner{text-align:center}
+.bm-content-title{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:22px;color:rgba(201,169,110,.5)}
+.bm-content-sub{font-size:7px;letter-spacing:.2em;color:rgba(201,169,110,.25);margin-top:6px}
+
+/* ── World: globe SVG ── */
+#float-world{
+  left:8vw;top:50%;transform:translateY(-50%);
+  opacity:0;width:240px;height:240px;
+}
+
+/* ═══════════════════════════════════════════
+   PROCESS — Getty linear narrative style
+═══════════════════════════════════════════ */
+#process{
+  position:relative;z-index:5;
+  padding:160px 10vw;
+  background:rgba(0,0,0,.15);
+}
+.proc-header{margin-bottom:100px}
+.proc-section-label{font-size:7px;letter-spacing:.45em;text-transform:uppercase;color:var(--cream3);margin-bottom:16px}
+.proc-title{
+  font-family:'Cormorant Garamond',serif;
+  font-size:clamp(36px,5.5vw,72px);font-weight:300;line-height:1.05;
+}
+.proc-title em{font-style:italic;color:rgba(244,241,235,.4)}
+
+.proc-steps{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:1px;
+  background:rgba(244,241,235,.05);
+}
+.proc-step{
+  background:var(--g0);
+  padding:52px 36px;position:relative;overflow:hidden;
+  transition:background .5s;
+}
+.proc-step:hover{background:#060f08}
+.ps-num{
+  font-family:'Cormorant Garamond',serif;
+  font-size:clamp(48px,6vw,80px);font-weight:300;
+  color:rgba(244,241,235,.04);line-height:1;
+  margin-bottom:-16px;letter-spacing:-.02em;
+}
+.ps-icon{
+  width:32px;height:1px;background:var(--gold);
+  margin-bottom:24px;
+  transition:width .5s cubic-bezier(.16,1,.3,1);
+}
+.proc-step:hover .ps-icon{width:64px}
+.ps-title{
+  font-family:'Cormorant Garamond',serif;
+  font-size:24px;font-weight:300;margin-bottom:14px;line-height:1.1;
+}
+.ps-title em{font-style:italic;color:rgba(244,241,235,.45)}
+.ps-desc{font-size:10px;line-height:2;color:rgba(244,241,235,.35)}
+
+/* ═══════════════════════════════════════════
+   FOUNDER — cinematic split
+═══════════════════════════════════════════ */
+#founder{
+  position:relative;z-index:5;
+  min-height:100vh;display:grid;grid-template-columns:1fr 1fr;
+}
+.founder-visual{
+  position:relative;overflow:hidden;
+  background:url('https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=900&q=85') center/cover;
+  filter:brightness(.35) saturate(1.1);
+}
+.founder-visual::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(to right,transparent,var(--g0));
+}
+.founder-content{
+  padding:120px 80px 120px 60px;
+  display:flex;flex-direction:column;justify-content:center;
+  background:linear-gradient(to left,var(--g0),rgba(2,8,6,.95));
+}
+.founder-section-label{font-size:7px;letter-spacing:.45em;text-transform:uppercase;color:var(--cream3);margin-bottom:20px}
+.founder-title{
+  font-family:'Cormorant Garamond',serif;
+  font-size:clamp(40px,5vw,68px);font-weight:300;line-height:1.05;
+  margin-bottom:28px;
+}
+.founder-title em{font-style:italic;color:rgba(244,241,235,.4)}
+.founder-text{font-size:11px;line-height:2.1;color:rgba(244,241,235,.5);max-width:440px;margin-bottom:18px}
+
+/* Passport stamps — country tags */
+.founder-stamps{display:flex;flex-wrap:wrap;gap:8px;margin-top:36px}
+.stamp{
+  font-size:7px;letter-spacing:.2em;text-transform:uppercase;
+  border:1px solid rgba(244,241,235,.1);padding:8px 13px;
+  color:rgba(244,241,235,.35);position:relative;overflow:hidden;
+  cursor:none;transition:all .4s;
+}
+.stamp::before{
+  content:'';position:absolute;inset:0;
+  background:rgba(244,241,235,.04);
+  transform:scaleX(0);transform-origin:left;
+  transition:transform .4s cubic-bezier(.16,1,.3,1);
+}
+.stamp:hover{border-color:rgba(244,241,235,.3);color:var(--cream)}
+.stamp:hover::before{transform:scaleX(1)}
+
+/* ═══════════════════════════════════════════
+   PORTFOLIO REEL
+═══════════════════════════════════════════ */
+#work{
+  position:relative;z-index:5;
+  padding:160px 10vw;
+}
+.work-header{
+  display:flex;justify-content:space-between;align-items:flex-end;
+  margin-bottom:72px;
+}
+.work-title{
+  font-family:'Cormorant Garamond',serif;
+  font-size:clamp(36px,5vw,68px);font-weight:300;line-height:1;
+}
+.work-title em{font-style:italic}
+.work-sub{font-size:10px;color:var(--cream3);max-width:240px;line-height:1.9;text-align:right}
+
+/* Asymmetric grid */
+.work-grid{
+  display:grid;
+  grid-template-columns:55fr 45fr;
+  grid-template-rows:auto;
+  gap:12px;
+}
+.wi{
+  position:relative;overflow:hidden;cursor:none;
+  background:rgba(244,241,235,.04);
+}
+.wi:nth-child(1){grid-row:span 2}
+.wi:nth-child(1){aspect-ratio:3/4}
+.wi:nth-child(2){aspect-ratio:16/9}
+.wi:nth-child(3){aspect-ratio:16/8}
+.wi:nth-child(4){grid-column:span 2;aspect-ratio:16/5}
+
+.wi-bg{
+  position:absolute;inset:0;background-size:cover;background-position:center;
+  transform:scale(1.06);transition:transform .8s cubic-bezier(.16,1,.3,1);
+  filter:brightness(.4) saturate(1.1);
+}
+.wi:hover .wi-bg{transform:scale(1)}
+
+.wi-overlay{
+  position:absolute;inset:0;
+  background:linear-gradient(to top,rgba(2,8,6,.85) 0%,transparent 50%);
+  opacity:0;transition:opacity .5s;
+}
+.wi:hover .wi-overlay{opacity:1}
+
+.wi-info{
+  position:absolute;bottom:0;left:0;right:0;padding:24px;z-index:2;
+  transform:translateY(8px);opacity:0;
+  transition:all .5s cubic-bezier(.16,1,.3,1);
+}
+.wi:hover .wi-info{transform:none;opacity:1}
+.wi-client{font-size:7px;letter-spacing:.22em;text-transform:uppercase;color:rgba(244,241,235,.4);margin-bottom:5px}
+.wi-name{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:300;color:var(--cream)}
+.wi-type{font-size:7px;letter-spacing:.15em;color:var(--gold);margin-top:3px;text-transform:uppercase}
+
+/* Placeholder bg colors for work items */
+.wi-bg-1{background:radial-gradient(ellipse at 40% 50%,rgba(200,134,74,.25),rgba(2,8,6,.95))}
+.wi-bg-2{background:radial-gradient(ellipse at 60% 40%,rgba(27,74,46,.4),rgba(2,8,6,.95))}
+.wi-bg-3{background:radial-gradient(ellipse at 30% 60%,rgba(74,138,191,.2),rgba(2,8,6,.95))}
+.wi-bg-4{background:radial-gradient(ellipse at 50% 50%,rgba(201,169,110,.15),rgba(2,8,6,.95))}
+
+/* Play icon for video items */
+.wi-play{
+  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:3;
+  width:52px;height:52px;border-radius:50%;
+  border:1px solid rgba(244,241,235,.25);
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(2,8,6,.4);backdrop-filter:blur(8px);
+  opacity:0;transition:opacity .3s;
+}
+.wi-play svg{width:14px;fill:var(--cream);margin-left:3px}
+.wi:hover .wi-play{opacity:1}
+
+/* Assets notice */
+.assets-tag{
+  margin-top:20px;display:flex;align-items:center;gap:10px;
+  padding:16px 20px;border:1px solid rgba(244,241,235,.05);
+}
+.at-dot{width:4px;height:4px;border-radius:50%;background:var(--gold);flex-shrink:0;animation:atpulse 2s ease-in-out infinite}
+@keyframes atpulse{0%,100%{opacity:1}50%{opacity:.3}}
+.at-txt{font-size:8px;letter-spacing:.12em;color:rgba(244,241,235,.22)}
+
+/* ═══════════════════════════════════════════
+   CONTACT CTA
+═══════════════════════════════════════════ */
+#cta{
+  position:relative;z-index:5;
+  padding:200px 10vw;text-align:center;overflow:hidden;
+}
+#cta::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse at 50% 50%,rgba(27,74,46,.18) 0%,transparent 65%);
+  pointer-events:none;
+}
+.cta-eye{font-size:7px;letter-spacing:.45em;text-transform:uppercase;color:var(--cream3);margin-bottom:20px}
+.cta-title{
+  font-family:'Cormorant Garamond',serif;
+  font-size:clamp(56px,11vw,150px);
+  font-weight:300;line-height:.88;letter-spacing:-.015em;
+  margin-bottom:52px;position:relative;z-index:1;
+}
+.cta-title .stroke{-webkit-text-stroke:1px rgba(244,241,235,.32);color:transparent}
+.cta-email{
+  font-family:'Cormorant Garamond',serif;font-style:italic;
+  font-size:clamp(14px,2vw,24px);color:rgba(244,241,235,.4);
+  text-decoration:none;cursor:none;
+  border-bottom:1px solid rgba(244,241,235,.1);padding-bottom:3px;
+  transition:color .3s,border-color .3s;
+}
+.cta-email:hover{color:var(--cream);border-color:var(--cream)}
+
+/* ═══════════════════════════════════════════
+   FOOTER
+═══════════════════════════════════════════ */
+footer{
+  padding:30px 56px;display:flex;justify-content:space-between;align-items:center;
+  border-top:1px solid rgba(244,241,235,.05);position:relative;z-index:5;
+}
+.f-logo{font-family:'Cormorant Garamond',serif;font-size:10px;letter-spacing:.4em;text-transform:uppercase;color:rgba(244,241,235,.2)}
+.f-r{font-size:7px;letter-spacing:.12em;color:rgba(244,241,235,.16)}
+
+/* ═══════════════════════════════════════════
+   REVEAL
+═══════════════════════════════════════════ */
+.rv{opacity:0;transform:translateY(32px)}
+.rv-l{opacity:0;transform:translateX(-32px)}
+.rv-r{opacity:0;transform:translateX(32px)}
+.rv-s{opacity:0;transform:scale(.94)}
+
+/* ═══════════════════════════════════════════
+   BRANCH PANEL OVERLAY
+═══════════════════════════════════════════ */
+.bp{
+  position:fixed;inset:0;z-index:6000;display:none;
+  flex-direction:column;align-items:center;justify-content:center;
+  padding:80px 10vw;overflow-y:auto;
+}
+.bp.open{display:flex}
+.bp-close{
+  position:fixed;top:32px;right:44px;
+  font-size:7px;letter-spacing:.28em;text-transform:uppercase;
+  background:none;border:none;cursor:none;transition:color .3s;
+}
+#bp-studio{background:#0e0804}
+#bp-studio .bp-close{color:rgba(200,134,74,.5)}
+#bp-social{background:#02060e}
+#bp-social .bp-close{color:rgba(74,138,191,.5)}
+#bp-web{background:#040a04}
+#bp-web .bp-close{color:rgba(201,169,110,.5)}
+.bp-close:hover{color:var(--cream)!important}
+.bp-title{
+  font-family:'Cormorant Garamond',serif;
+  font-size:clamp(36px,6vw,80px);font-weight:300;margin-bottom:16px;
+}
+#bp-studio .bp-title{color:#e8c49a}
+#bp-social .bp-title{color:#a8c8f0}
+#bp-web .bp-title{color:#d4b870}
+.bp-rule{height:1px;width:48px;margin-bottom:24px}
+#bp-studio .bp-rule{background:var(--studio)}
+#bp-social .bp-rule{background:var(--house)}
+#bp-web .bp-rule{background:var(--gold)}
+.bp-desc{font-size:11px;line-height:2.1;color:rgba(244,241,235,.45);max-width:540px;margin-bottom:40px}
+.bp-form{display:flex;flex-direction:column;gap:14px;max-width:420px;width:100%}
+.bp-input{
+  background:rgba(244,241,235,.03);border:1px solid rgba(244,241,235,.08);
+  padding:13px 16px;font-family:'Jost',sans-serif;font-size:10px;
+  color:var(--cream);letter-spacing:.06em;outline:none;transition:border-color .3s;
+}
+.bp-input:focus{border-color:rgba(244,241,235,.25)}
+.bp-input::placeholder{color:rgba(244,241,235,.22)}
+.bp-btn{
+  padding:13px 28px;border:none;font-family:'Jost',sans-serif;
+  font-size:8px;letter-spacing:.22em;text-transform:uppercase;cursor:none;transition:opacity .3s;
+}
+#bp-studio .bp-btn{background:var(--studio);color:#0e0804}
+#bp-social .bp-btn{background:var(--house);color:#02060e}
+#bp-web .bp-btn{background:var(--gold);color:#040a04}
+.bp-btn:hover{opacity:.8}
 
 @media(max-width:900px){
-  nav{padding:22px 28px}
-  .nav-links{display:none}
-  #hero{padding:0 28px 12vh}
-  #hero::after{display:none}
-  .hero-studio-badge{right:28px;top:100px}
-  #founder{grid-template-columns:1fr;gap:56px;padding:100px 28px}
-  .founder-right{height:300px}
-  #services{padding:100px 28px}
-  .services-header{flex-direction:column;gap:20px}
-  .services-sub{text-align:left}
-  .services-grid{grid-template-columns:1fr}
-  #portfolio{padding:100px 28px}
-  .portfolio-header{grid-template-columns:1fr;gap:28px}
-  .reel-grid{grid-template-columns:1fr 1fr}
-  .reel-item:first-child{grid-column:span 2}
-  .ig-grid{grid-template-columns:1fr 1fr}
-  .web-grid{grid-template-columns:1fr}
-  .web-card:first-child{grid-column:span 1;aspect-ratio:16/9}
-  #contact{padding:120px 28px}
-  footer{padding:24px 28px;flex-direction:column;gap:10px;text-align:center}
+  nav{padding:20px 24px}.nav-links,.nav-r .nav-links{display:none}
+  #hero::before{display:none}
+  .hud-corner{display:none}
+  .hero-tc{display:none}
+  #manifesto-strip{flex-direction:column;gap:24px;padding:80px 24px}
+  .ms-number{display:none}
+  .chapter .ch-inner{padding:0 24px}
+  .chapter .ch-inner.right{margin-left:0;text-align:left}
+  .chapter .ch-inner.right .ch-line{margin-left:0}
+  .chapter .ch-inner.right .ch-tags{justify-content:flex-start}
+  .ch-float{display:none}
+  #founder{grid-template-columns:1fr}
+  .founder-visual{height:300px}
+  .founder-content{padding:60px 24px}
+  #work{padding:100px 24px}
+  .work-header{flex-direction:column;gap:20px;align-items:flex-start}
+  .work-sub{text-align:left}
+  .work-grid{grid-template-columns:1fr;grid-template-rows:auto}
+  .wi:nth-child(1){grid-row:auto;aspect-ratio:16/9}
+  .wi:nth-child(4){grid-column:span 1;aspect-ratio:16/9}
+  .proc-steps{grid-template-columns:1fr 1fr}
+  #cta{padding:120px 24px}
+  footer{padding:24px;flex-direction:column;gap:10px;text-align:center}
 }
 </style>
 </head>
 <body>
 
-<div id="cursor"></div>
-<div id="cursor-ring"></div>
-<div id="cursor-label">View</div>
-<div class="grain"></div>
+<!-- CURSOR -->
+<div id="cur"></div>
+<div id="cur-r"></div>
 
-<!-- PRELOADER -->
-<div id="preloader">
-  <div class="pre-tag">Verpome — Studio Branch</div>
-  <div class="pre-logo">
+<!-- GRAIN -->
+<div id="grain"></div>
+
+<!-- LOADER -->
+<div id="loader">
+  <div class="ld-eyebrow">Verpome Studio</div>
+  <div class="ld-word">
     <span>V</span><span>E</span><span>R</span><span>P</span><span>O</span><span>M</span><span>E</span>
   </div>
-  <div class="pre-bar-wrap"><div class="pre-bar" id="preBar"></div></div>
-  <div class="pre-pct" id="prePct">0%</div>
-  <div class="pre-studio">Studio</div>
+  <div class="ld-bar-w"><div class="ld-bar" id="ldBar"></div></div>
+  <div class="ld-pct" id="ldPct">0%</div>
 </div>
 
-<!-- VIDEO LIGHTBOX -->
-<div id="lightbox">
-  <div class="lightbox-inner">
-    <button class="lightbox-close" id="lbClose">✕ &nbsp;Close</button>
-    <div class="lightbox-screen">
-      <div class="lightbox-placeholder" id="lbPlaceholder">
-        Video asset coming soon.<br>Drop your footage here.
-      </div>
-    </div>
-    <div class="lightbox-meta">
-      <span class="lm-title" id="lbTitle"></span>
-      <span class="lm-type" id="lbType"></span>
-    </div>
-  </div>
+<!-- BRANCH PANELS -->
+<div class="bp" id="bp-studio">
+  <button class="bp-close" data-close="bp-studio">✕ &nbsp;Close</button>
+  <div class="bp-title">Visual Content</div>
+  <div class="bp-rule"></div>
+  <p class="bp-desc">Cinematic reels, premium photography, motion design — built for brands that refuse to be ordinary. Every frame intentional, every cut felt.</p>
+  <form class="bp-form" onsubmit="return false">
+    <input class="bp-input" placeholder="Your name" type="text">
+    <input class="bp-input" placeholder="Email" type="email">
+    <textarea class="bp-input" rows="3" placeholder="Tell us about your project"></textarea>
+    <button class="bp-btn">Send Brief →</button>
+  </form>
 </div>
-
-<canvas id="bg-canvas"></canvas>
+<div class="bp" id="bp-social">
+  <button class="bp-close" data-close="bp-social">✕ &nbsp;Close</button>
+  <div class="bp-title">Social Branding</div>
+  <div class="bp-rule"></div>
+  <p class="bp-desc">Your Instagram is your first impression. We architect editorial identities that make your audience feel something — every single day.</p>
+  <form class="bp-form" onsubmit="return false">
+    <input class="bp-input" placeholder="Your name" type="text">
+    <input class="bp-input" placeholder="Email" type="email">
+    <input class="bp-input" placeholder="Your Instagram handle" type="text">
+    <textarea class="bp-input" rows="3" placeholder="Current situation & goals"></textarea>
+    <button class="bp-btn">Start Strategy →</button>
+  </form>
+</div>
+<div class="bp" id="bp-web">
+  <button class="bp-close" data-close="bp-web">✕ &nbsp;Close</button>
+  <div class="bp-title">Web Experience</div>
+  <div class="bp-rule"></div>
+  <p class="bp-desc">Websites that are proof of mastery, not just online presence. Immersive, premium, built to make the right clients feel something before they read a word.</p>
+  <form class="bp-form" onsubmit="return false">
+    <input class="bp-input" placeholder="Your name" type="text">
+    <input class="bp-input" placeholder="Email" type="email">
+    <input class="bp-input" placeholder="Current site (if any)" type="url">
+    <textarea class="bp-input" rows="3" placeholder="What needs to exist?"></textarea>
+    <button class="bp-btn">Start Project →</button>
+  </form>
+</div>
 
 <!-- NAV -->
 <nav>
-  <div class="nav-logo">Verpome Studio</div>
-  <ul class="nav-links">
-    <li><a href="#founder">Founder</a></li>
-    <li><a href="#services">Expertise</a></li>
-    <li><a href="#portfolio">Work</a></li>
-    <li><a href="#contact">Contact</a></li>
-  </ul>
+  <a href="#" class="nav-logo">Verpome Studio</a>
+  <div class="nav-r">
+    <ul class="nav-links">
+      <li><a href="#ch-studio">Visual</a></li>
+      <li><a href="#ch-social">Social</a></li>
+      <li><a href="#ch-web">Web</a></li>
+      <li><a href="#founder">Founder</a></li>
+    </ul>
+    <a href="#cta" class="nav-cta">Work with us</a>
+  </div>
 </nav>
 
-<!-- HERO — same DNA as main verpome site -->
+<!-- HERO -->
 <section id="hero">
-  <!-- Studio badge top right -->
-  <div class="hero-studio-badge">
-    <div class="hero-badge-dot"></div>
-    <span class="hero-badge-txt">Studio · Bangkok</span>
+  <div id="hero-bg"></div>
+
+  <div class="hud-corner tl"></div>
+  <div class="hud-corner tr"></div>
+  <div class="hud-corner bl"></div>
+  <div class="hud-corner br"></div>
+
+  <!-- APERTURE SYMBOL — the eye of the studio -->
+  <div id="aperture">
+    <canvas id="aperture-canvas" width="320" height="320" style="width:160px;height:160px"></canvas>
   </div>
 
-  <div class="hero-eyebrow">Verpome Studio — Visual Intelligence</div>
+  <div class="hero-eyebrow">Verpome Studio — Visual Intelligence · Bangkok</div>
 
   <h1 class="hero-title">
     <span class="line"><span>Your Story</span></span>
-    <span class="line outline"><span>Deserves</span></span>
+    <span class="line stroke"><span>Deserves</span></span>
     <span class="line"><span>to be Told</span></span>
-    <span class="line outline"><span>Properly.</span></span>
+    <span class="line stroke"><span>Properly.</span></span>
   </h1>
 
-  <div class="hero-bottom">
-    <p class="hero-desc">We don't create content. We build visual worlds — from Bangkok to the world — that make brands impossible to ignore.</p>
-    <a href="#contact" class="hero-cta">Start a project →</a>
-    <div class="hero-scroll">
-      <div class="hero-scroll-line"></div>
-      <span class="hero-scroll-txt">Scroll</span>
-    </div>
-  </div>
+  <p class="hero-tagline">Visual Content &nbsp;·&nbsp; Social Branding &nbsp;·&nbsp; Web Experience</p>
 
-  <!-- Timecode — studio UX detail -->
-  <div class="hero-timecode" id="timecode">00:00:00:00</div>
+  <div class="hero-scroll">
+    <div class="scroll-line"></div>
+    <span class="scroll-txt">Scroll</span>
+  </div>
+  <div class="hero-tc" id="tc">00:00:00:00</div>
 </section>
 
-<!-- MARQUEE -->
+<!-- MARQUEE 1 -->
 <div class="marquee-wrap">
   <div class="marquee-track">
-    <span class="marquee-item">Cinematic Reels <span class="marquee-dot">✦</span></span>
-    <span class="marquee-item">Premium Photography <span class="marquee-dot">✦</span></span>
-    <span class="marquee-item">Social Branding <span class="marquee-dot">✦</span></span>
-    <span class="marquee-item">Bangkok · Paris · São Paulo · New York <span class="marquee-dot">✦</span></span>
-    <span class="marquee-item">Web Experience <span class="marquee-dot">✦</span></span>
-    <span class="marquee-item">Visual Direction <span class="marquee-dot">✦</span></span>
-    <span class="marquee-item">Cinematic Reels <span class="marquee-dot">✦</span></span>
-    <span class="marquee-item">Premium Photography <span class="marquee-dot">✦</span></span>
-    <span class="marquee-item">Social Branding <span class="marquee-dot">✦</span></span>
-    <span class="marquee-item">Bangkok · Paris · São Paulo · New York <span class="marquee-dot">✦</span></span>
-    <span class="marquee-item">Web Experience <span class="marquee-dot">✦</span></span>
-    <span class="marquee-item">Visual Direction <span class="marquee-dot">✦</span></span>
+    <span class="mi">Cinematic Reels <span class="md">✦</span></span>
+    <span class="mi">Premium Photography <span class="md">✦</span></span>
+    <span class="mi">Social Branding <span class="md">✦</span></span>
+    <span class="mi">Bangkok · Paris · São Paulo · New York <span class="md">✦</span></span>
+    <span class="mi">Web Experience <span class="md">✦</span></span>
+    <span class="mi">Visual Direction <span class="md">✦</span></span>
+    <span class="mi">Cinematic Reels <span class="md">✦</span></span>
+    <span class="mi">Premium Photography <span class="md">✦</span></span>
+    <span class="mi">Social Branding <span class="md">✦</span></span>
+    <span class="mi">Bangkok · Paris · São Paulo · New York <span class="md">✦</span></span>
+    <span class="mi">Web Experience <span class="md">✦</span></span>
+    <span class="mi">Visual Direction <span class="md">✦</span></span>
   </div>
 </div>
 
+<!-- MANIFESTO STRIP -->
+<section id="manifesto-strip">
+  <div class="ms-number rv">VS</div>
+  <div class="ms-text">
+    <p class="ms-quote rv">"We don't create content.<br>We build visual worlds."</p>
+    <span class="ms-attr rv">— Verpome Studio · Est. 2026 · Bangkok</span>
+  </div>
+</section>
+
+<!-- CHAPTER 1: VISUAL CONTENT -->
+<section class="chapter" id="ch-studio">
+  <div class="ch-bg"></div>
+  <div class="ch-overlay"></div>
+  <div class="ch-inner">
+    <span class="ch-num rv">01 / 03</span>
+    <div class="ch-tag rv">Visual Content</div>
+    <h2 class="ch-title rv">Cinematic<br><em>Precision.</em></h2>
+    <div class="ch-line rv"></div>
+    <p class="ch-desc rv">Every frame intentional. Every edit felt. We create visual content that doesn't just show — it makes people stop, feel, and remember. Reels, films, photography for brands that deserve more than average.</p>
+    <div class="ch-tags rv">
+      <span class="ch-pill">Cinematic Reels</span>
+      <span class="ch-pill">Photography</span>
+      <span class="ch-pill">Motion Design</span>
+      <span class="ch-pill">Campaign Direction</span>
+    </div>
+    <a href="#" class="ch-cta rv" data-open="bp-studio">Start a Visual Project →</a>
+  </div>
+  <!-- Floating: aperture rings -->
+  <div class="ch-float" id="float-studio">
+    <canvas id="studio-float-canvas" width="560" height="560" style="width:280px;height:280px;opacity:.85"></canvas>
+  </div>
+</section>
+
+<!-- MARQUEE 2 -->
+<div class="marquee-wrap">
+  <div class="marquee-track rev">
+    <span class="mi">South Africa <span class="md">✦</span></span>
+    <span class="mi">Brazil <span class="md">✦</span></span>
+    <span class="mi">France <span class="md">✦</span></span>
+    <span class="mi">Thailand <span class="md">✦</span></span>
+    <span class="mi">United States <span class="md">✦</span></span>
+    <span class="mi">Building Bridges <span class="md">✦</span></span>
+    <span class="mi">South Africa <span class="md">✦</span></span>
+    <span class="mi">Brazil <span class="md">✦</span></span>
+    <span class="mi">France <span class="md">✦</span></span>
+    <span class="mi">Thailand <span class="md">✦</span></span>
+    <span class="mi">United States <span class="md">✦</span></span>
+    <span class="mi">Building Bridges <span class="md">✦</span></span>
+  </div>
+</div>
+
+<!-- CHAPTER 2: SOCIAL BRANDING -->
+<section class="chapter" id="ch-social">
+  <div class="ch-bg"></div>
+  <div class="ch-overlay"></div>
+  <!-- Phone mockup left -->
+  <div class="ch-float" id="float-social">
+    <div class="phone-mock">
+      <div class="phone-notch"></div>
+      <div class="phone-ig-row">
+        <div class="phone-ig-cell"></div>
+        <div class="phone-ig-cell"></div>
+        <div class="phone-ig-cell"></div>
+      </div>
+      <div class="phone-ig-row">
+        <div class="phone-ig-cell"></div>
+        <div class="phone-ig-cell"></div>
+        <div class="phone-ig-cell"></div>
+      </div>
+      <div class="phone-ig-row">
+        <div class="phone-ig-cell"></div>
+        <div class="phone-ig-cell"></div>
+        <div class="phone-ig-cell"></div>
+      </div>
+      <div class="phone-metric">+48k</div>
+      <div class="phone-metric-l">Followers in 90 days</div>
+    </div>
+  </div>
+  <div class="ch-inner right">
+    <span class="ch-num rv">02 / 03</span>
+    <div class="ch-tag rv">Social Branding</div>
+    <h2 class="ch-title rv">Your Feed<br><em>is Your</em><br>First Impression.</h2>
+    <div class="ch-line rv"></div>
+    <p class="ch-desc rv">We architect Instagram identities that make your audience feel something — every single post. Editorial strategy, DA, community management for brands that want to be felt, not just seen.</p>
+    <div class="ch-tags rv">
+      <span class="ch-pill">Instagram Strategy</span>
+      <span class="ch-pill">Personal Branding</span>
+      <span class="ch-pill">Content Calendar</span>
+      <span class="ch-pill">Community Management</span>
+    </div>
+    <a href="#" class="ch-cta rv" data-open="bp-social">Build Your Identity →</a>
+  </div>
+</section>
+
+<!-- CHAPTER 3: WEB EXPERIENCE -->
+<section class="chapter" id="ch-web">
+  <div class="ch-bg"></div>
+  <div class="ch-overlay"></div>
+  <div class="ch-inner">
+    <span class="ch-num rv">03 / 03</span>
+    <div class="ch-tag rv">Web Experience</div>
+    <h2 class="ch-title rv">Websites<br><em>That Feel</em><br>Like Worlds.</h2>
+    <div class="ch-line rv"></div>
+    <p class="ch-desc rv">Not just an online presence — a visual proof of mastery. We build immersive web experiences that make the right clients feel something before they read a single word.</p>
+    <div class="ch-tags rv">
+      <span class="ch-pill">Portfolio & Brand Sites</span>
+      <span class="ch-pill">Immersive UX</span>
+      <span class="ch-pill">Landing Pages</span>
+      <span class="ch-pill">Digital Identity</span>
+    </div>
+    <a href="#" class="ch-cta rv" data-open="bp-web">Start a Web Project →</a>
+  </div>
+  <!-- Browser mockup -->
+  <div class="ch-float" id="float-web">
+    <div class="browser-mock">
+      <div class="bm-chrome">
+        <div class="bm-dot"></div><div class="bm-dot"></div><div class="bm-dot"></div>
+        <span class="bm-url">verpome.com</span>
+      </div>
+      <div class="bm-content">
+        <div class="bm-content-inner">
+          <div class="bm-content-title">Verpome</div>
+          <div class="bm-content-sub">Building Bridges</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PROCESS -->
+<section id="process">
+  <div class="proc-header">
+    <div class="proc-section-label rv">How We Work</div>
+    <h2 class="proc-title rv">The <em>Process.</em></h2>
+  </div>
+  <div class="proc-steps">
+    <div class="proc-step rv">
+      <div class="ps-num">01</div>
+      <div class="ps-icon"></div>
+      <h3 class="ps-title">Brief &<br><em>Discovery</em></h3>
+      <p class="ps-desc">We learn your world — your audience, ambition, and what makes you different. No templates. Everything starts from scratch.</p>
+    </div>
+    <div class="proc-step rv">
+      <div class="ps-num">02</div>
+      <div class="ps-icon"></div>
+      <h3 class="ps-title">Visual<br><em>Direction</em></h3>
+      <p class="ps-desc">We define the aesthetic universe of your project — colors, mood, references, feeling. Before a single frame is shot or pixel placed.</p>
+    </div>
+    <div class="proc-step rv">
+      <div class="ps-num">03</div>
+      <div class="ps-icon"></div>
+      <h3 class="ps-title">Creation<br><em>& Execution</em></h3>
+      <p class="ps-desc">We produce with obsessive attention to detail. Every edit, every transition, every line of code — intentional.</p>
+    </div>
+    <div class="proc-step rv">
+      <div class="ps-num">04</div>
+      <div class="ps-icon"></div>
+      <h3 class="ps-title">Deliver<br><em>& Scale</em></h3>
+      <p class="ps-desc">We hand over work that works. Then we track, adapt, and evolve. This isn't a one-off — it's a creative partnership.</p>
+    </div>
+  </div>
+</section>
+
 <!-- FOUNDER -->
 <section id="founder">
-  <div class="founder-left reveal-left">
-    <div class="section-label">01 — The Founder</div>
-    <h2 class="founder-title">
-      Grégoire<br>Thibaut.<br><em>Builder.</em>
-    </h2>
-    <p class="founder-text">From the corporate precision of Groupe SEB to the electric energy of Bangkok — Grégoire Thibaut has spent years building his creative eye across borders, cultures, and industries that never intersect.</p>
-    <p class="founder-text">Verpome Studio was born from a refusal to make average content for brands that deserve to be extraordinary.</p>
-    <div class="founder-countries">
-      <span class="country-tag">🇿🇦 South Africa</span>
-      <span class="country-tag">🇧🇷 Brazil</span>
-      <span class="country-tag">🇺🇸 USA</span>
-      <span class="country-tag">🇫🇷 France</span>
-      <span class="country-tag">🇪🇺 Europe</span>
-      <span class="country-tag">🇹🇭 Thailand</span>
-    </div>
-  </div>
-  <div class="founder-right reveal-scale">
-    <div class="founder-img city-bkk">
-      <div class="founder-img-inner"><span class="founder-img-tag">Bangkok, Thailand</span></div>
-    </div>
-    <div class="founder-img city-paris">
-      <div class="founder-img-inner"><span class="founder-img-tag">Paris, France</span></div>
-    </div>
-    <div class="founder-img city-brasil">
-      <div class="founder-img-inner"><span class="founder-img-tag">Brazil</span></div>
+  <div class="founder-visual"></div>
+  <div class="founder-content">
+    <div class="founder-section-label rv">The Founder</div>
+    <h2 class="founder-title rv">Grégoire<br>Thibaut.<br><em>Builder.</em></h2>
+    <p class="founder-text rv">From the corporate precision of Groupe SEB — Tefal, Moulinex — to the electric energy of Bangkok. Grégoire Thibaut has spent years building his creative eye across borders, cultures, and industries that never intersect.</p>
+    <p class="founder-text rv">Verpome Studio was born from one refusal: to make average content for brands that deserve to be extraordinary.</p>
+    <div class="founder-stamps rv">
+      <span class="stamp">🇿🇦 South Africa</span>
+      <span class="stamp">🇧🇷 Brazil</span>
+      <span class="stamp">🇺🇸 USA</span>
+      <span class="stamp">🇫🇷 France</span>
+      <span class="stamp">🇹🇭 Thailand</span>
+      <span class="stamp">🌍 Building Bridges</span>
     </div>
   </div>
 </section>
 
-<!-- SERVICES -->
-<section id="services">
-  <div class="services-header">
+<!-- WORK -->
+<section id="work">
+  <div class="work-header">
     <div>
-      <div class="section-label reveal">02 — Expertise</div>
-      <h2 class="services-title reveal">Three<br><em>Pillars.</em></h2>
+      <div class="proc-section-label rv">Selected Work</div>
+      <h2 class="work-title rv">The <em>Archives.</em></h2>
     </div>
-    <p class="services-sub reveal">Each department operates as a standalone house of expertise — together, a complete visual ecosystem.</p>
+    <p class="work-sub rv">Drop your footage here — replace placeholder backgrounds with real project thumbnails.</p>
   </div>
-  <div class="services-grid">
-    <div class="service-card reveal">
-      <span class="service-num">Department I</span>
-      <div class="service-icon"></div>
-      <h3 class="service-name">Visual<br><em>Content.</em></h3>
-      <p class="service-desc">Cinematic content that stops the scroll and builds desire. Photography, video, motion — built for brands that refuse ordinary.</p>
-      <ul class="service-list">
-        <li>Cinematic Reels & Films</li>
-        <li>Premium Photography</li>
-        <li>Motion Design</li>
-        <li>Campaign Direction</li>
-      </ul>
+  <div class="work-grid">
+    <div class="wi rv" data-title="Rotary Club" data-type="Event Film · Lyon 2025">
+      <div class="wi-bg wi-bg-1"></div>
+      <div class="wi-play"><svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg></div>
+      <div class="wi-overlay"></div>
+      <div class="wi-info">
+        <div class="wi-client">Lyon, France</div>
+        <div class="wi-name">Rotary Club</div>
+        <div class="wi-type">Event Film</div>
+      </div>
     </div>
-    <div class="service-card reveal">
-      <span class="service-num">Department II</span>
-      <div class="service-icon"></div>
-      <h3 class="service-name">Social<br><em>Branding.</em></h3>
-      <p class="service-desc">Your Instagram is your first impression. We build editorial strategies that make your audience feel something every single day.</p>
-      <ul class="service-list">
-        <li>Instagram Strategy & DA</li>
-        <li>Personal Branding</li>
-        <li>Community Management</li>
-        <li>Content Calendar</li>
-      </ul>
+    <div class="wi rv" data-title="KT Avocats" data-type="Brand Identity + Web · Paris 2025">
+      <div class="wi-bg wi-bg-2"></div>
+      <div class="wi-overlay"></div>
+      <div class="wi-info">
+        <div class="wi-client">Paris, France</div>
+        <div class="wi-name">KT Avocats</div>
+        <div class="wi-type">Brand Identity + Web</div>
+      </div>
     </div>
-    <div class="service-card reveal">
-      <span class="service-num">Department III</span>
-      <div class="service-icon"></div>
-      <h3 class="service-name">Web<br><em>Experience.</em></h3>
-      <p class="service-desc">Websites that are proof of mastery, not just online presence. Immersive, premium, built to convert the right clients.</p>
-      <ul class="service-list">
-        <li>Portfolio & Brand Sites</li>
-        <li>Immersive UX Design</li>
-        <li>Landing Pages</li>
-        <li>Digital Identity</li>
-      </ul>
+    <div class="wi rv">
+      <div class="wi-bg wi-bg-3"></div>
+      <div class="wi-play"><svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg></div>
+      <div class="wi-overlay"></div>
+      <div class="wi-info">
+        <div class="wi-client">Bangkok</div>
+        <div class="wi-name">Lifestyle Reel</div>
+        <div class="wi-type">Cinematic Content</div>
+      </div>
     </div>
-  </div>
-</section>
-
-<!-- PORTFOLIO — TABBED -->
-<section id="portfolio">
-  <div class="portfolio-header">
-    <div>
-      <div class="section-label reveal">03 — Selected Work</div>
-      <h2 class="portfolio-title reveal">The<br><em>Archives.</em></h2>
-    </div>
-    <div class="portfolio-tabs">
-      <button class="tab-btn active" data-tab="film">Film & Reels</button>
-      <button class="tab-btn" data-tab="social">Instagram</button>
-      <button class="tab-btn" data-tab="web">Web</button>
+    <div class="wi rv">
+      <div class="wi-bg wi-bg-4"></div>
+      <div class="wi-overlay"></div>
+      <div class="wi-info">
+        <div class="wi-client">International</div>
+        <div class="wi-name">Coming Soon</div>
+        <div class="wi-type">Social Strategy</div>
+      </div>
     </div>
   </div>
-
-  <!-- FILM PANEL -->
-  <div class="portfolio-panel active" id="tab-film">
-    <div class="reel-grid">
-      <div class="reel-item reel-bg-1 reveal" data-title="Rotary Club Lyon" data-type="Event Film · 2025">
-        <div class="reel-frame"></div>
-        <div class="reel-play"><svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg></div>
-        <div class="reel-info">
-          <div class="reel-client">Lyon, France</div>
-          <div class="reel-name">Rotary Club</div>
-          <div class="reel-type">Event Film</div>
-        </div>
-      </div>
-      <div class="reel-item reel-bg-2 reveal" data-title="KT Avocats" data-type="Brand Film · 2025">
-        <div class="reel-frame"></div>
-        <div class="reel-play"><svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg></div>
-        <div class="reel-info">
-          <div class="reel-client">Paris, France</div>
-          <div class="reel-name">KT Avocats</div>
-          <div class="reel-type">Brand Film</div>
-        </div>
-      </div>
-      <div class="reel-item reel-bg-3 reveal" data-title="Bangkok Lifestyle" data-type="Cinematic Reel · 2026">
-        <div class="reel-frame"></div>
-        <div class="reel-play"><svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg></div>
-        <div class="reel-info">
-          <div class="reel-client">Bangkok</div>
-          <div class="reel-name">Lifestyle Reel</div>
-          <div class="reel-type">Cinematic</div>
-        </div>
-      </div>
-      <div class="reel-item reel-bg-4 reveal" data-title="Travel Series" data-type="Short Film · 2025">
-        <div class="reel-frame"></div>
-        <div class="reel-play"><svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg></div>
-        <div class="reel-info">
-          <div class="reel-client">International</div>
-          <div class="reel-name">Travel Series</div>
-          <div class="reel-type">Short Film</div>
-        </div>
-      </div>
-      <div class="reel-item reel-bg-5 reveal" data-title="Hospitality" data-type="Campaign · 2025">
-        <div class="reel-frame"></div>
-        <div class="reel-play"><svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg></div>
-        <div class="reel-info">
-          <div class="reel-client">Côte d'Azur</div>
-          <div class="reel-name">Hospitality</div>
-          <div class="reel-type">Campaign</div>
-        </div>
-      </div>
-    </div>
-    <div class="assets-notice">
-      <div class="assets-dot"></div>
-      <span class="assets-txt">Assets folder in progress — your footage drops here. Replace placeholder backgrounds with real thumbnails.</span>
-    </div>
-  </div>
-
-  <!-- SOCIAL / IG PANEL -->
-  <div class="portfolio-panel" id="tab-social">
-    <div class="ig-grid">
-      <div class="ig-card ig-bg-1 reveal">
-        <div class="ig-overlay"></div>
-        <div class="ig-info">
-          <div class="ig-handle">@client_handle</div>
-          <div class="ig-metric">+48k</div>
-        </div>
-      </div>
-      <div class="ig-card ig-bg-2 reveal">
-        <div class="ig-overlay"></div>
-        <div class="ig-info">
-          <div class="ig-handle">@client_handle</div>
-          <div class="ig-metric">+23k</div>
-        </div>
-      </div>
-      <div class="ig-card ig-bg-3 reveal">
-        <div class="ig-overlay"></div>
-        <div class="ig-info">
-          <div class="ig-handle">@client_handle</div>
-          <div class="ig-metric">×3.2 ER</div>
-        </div>
-      </div>
-      <div class="ig-card ig-bg-4 reveal">
-        <div class="ig-overlay"></div>
-        <div class="ig-info">
-          <div class="ig-handle">@client_handle</div>
-          <div class="ig-metric">+12k</div>
-        </div>
-      </div>
-    </div>
-    <div class="assets-notice">
-      <div class="assets-dot"></div>
-      <span class="assets-txt">Insert Instagram screenshots & account results — replace @client_handle with real accounts and real metrics.</span>
-    </div>
-  </div>
-
-  <!-- WEB PANEL -->
-  <div class="portfolio-panel" id="tab-web">
-    <div class="web-grid">
-      <div class="web-card web-bg-1 reveal">
-        <div class="browser-chrome">
-          <div class="b-dot"></div><div class="b-dot"></div><div class="b-dot"></div>
-          <span class="browser-url">verpome.com</span>
-        </div>
-        <div class="web-preview web-bg-1">
-          <div class="web-overlay">
-            <div class="web-info">
-              <div class="web-client">Bangkok, 2026</div>
-              <div class="web-name">Verpome.com</div>
-              <div class="web-tag">Immersive Web Experience</div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="web-card web-bg-2 reveal">
-        <div class="browser-chrome">
-          <div class="b-dot"></div><div class="b-dot"></div><div class="b-dot"></div>
-          <span class="browser-url">kt-avocats.fr</span>
-        </div>
-        <div class="web-preview web-bg-2">
-          <div class="web-overlay">
-            <div class="web-info">
-              <div class="web-client">Paris, France</div>
-              <div class="web-name">KT Avocats</div>
-              <div class="web-tag">Brand Website + Identity</div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="web-card web-bg-3 reveal">
-        <div class="browser-chrome">
-          <div class="b-dot"></div><div class="b-dot"></div><div class="b-dot"></div>
-          <span class="browser-url">client-site.com</span>
-        </div>
-        <div class="web-preview web-bg-3">
-          <div class="web-overlay">
-            <div class="web-info">
-              <div class="web-client">International</div>
-              <div class="web-name">Coming Soon</div>
-              <div class="web-tag">Portfolio Expansion</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="assets-notice">
-      <div class="assets-dot"></div>
-      <span class="assets-txt">Drop real screenshots of completed sites — replace browser chrome URL and preview backgrounds.</span>
-    </div>
+  <div class="assets-tag rv">
+    <div class="at-dot"></div>
+    <span class="at-txt">Assets folder in progress — replace placeholder backgrounds with real project thumbnails when ready</span>
   </div>
 </section>
 
-<!-- TESTIMONIAL -->
-<section id="testimonial">
-  <p class="testimonial-quote reveal">"The way Verpome approaches visual storytelling is unlike anything we'd seen before. They don't just create content — they create a feeling that stays."</p>
-  <span class="testimonial-attr reveal">— Client, Hospitality Sector, Bangkok</span>
-</section>
-
-<!-- CONTACT -->
-<section id="contact">
-  <div class="contact-eyebrow reveal">Ready to build something remarkable?</div>
-  <h2 class="contact-title reveal">
-    Let's<br>
-    <span class="outline">Create.</span>
+<!-- CONTACT CTA -->
+<section id="cta">
+  <div class="cta-eye rv">Ready to build something remarkable?</div>
+  <h2 class="cta-title rv">
+    Let's<br><span class="stroke">Create.</span>
   </h2>
-  <a href="mailto:contact@verpome.com" class="contact-email reveal">contact@verpome.com</a>
+  <a href="mailto:contact@verpome.com" class="cta-email rv">contact@verpome.com</a>
 </section>
 
 <footer>
-  <span class="foot-logo">Verpome Studio</span>
-  <span class="foot-right">Bangkok · Registered in Estonia · © 2026</span>
+  <span class="f-logo">Verpome Studio</span>
+  <span class="f-r">@verpome.co · Bangkok · Registered in Estonia · © 2026</span>
 </footer>
 
 <script>
 gsap.registerPlugin(ScrollTrigger);
 
-// ── CURSOR
-const cur=document.getElementById('cursor');
-const ring=document.getElementById('cursor-ring');
-const lbl=document.getElementById('cursor-label');
+// ─── CURSOR
+const cur=document.getElementById('cur'),curR=document.getElementById('cur-r');
 let mx=0,my=0,cx=0,cy=0,rx=0,ry=0;
-document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;});
+document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY});
 (function tick(){
-  cx+=(mx-cx)*.15;cy+=(my-cy)*.15;
-  rx+=(mx-rx)*.08;ry+=(my-ry)*.08;
+  cx+=(mx-cx)*.14;cy+=(my-cy)*.14;rx+=(mx-rx)*.07;ry+=(my-ry)*.07;
   cur.style.left=cx+'px';cur.style.top=cy+'px';
-  ring.style.left=rx+'px';ring.style.top=ry+'px';
-  lbl.style.left=(mx+20)+'px';lbl.style.top=my+'px';
+  curR.style.left=rx+'px';curR.style.top=ry+'px';
   requestAnimationFrame(tick);
 })();
-document.querySelectorAll('.reel-item,.ig-card,.web-card,.hero-cta,.service-card').forEach(el=>{
-  el.addEventListener('mouseenter',()=>document.body.classList.add('hovering'));
-  el.addEventListener('mouseleave',()=>document.body.classList.remove('hovering'));
+document.querySelectorAll('.ch-cta,.nav-cta,.cta-email,.wi,.stamp,.ch-tag').forEach(el=>{
+  el.addEventListener('mouseenter',()=>document.body.classList.add('hov'));
+  el.addEventListener('mouseleave',()=>document.body.classList.remove('hov'));
 });
 
-// ── CANVAS BACKGROUND — leather texture + mouse light
-const canvas=document.getElementById('bg-canvas');
-const ctx=canvas.getContext('2d');
-let W,H,mLx=.5,mLy=.5,t=0;
-function resize(){W=canvas.width=window.innerWidth;H=canvas.height=window.innerHeight;}
-resize();window.addEventListener('resize',resize);
-document.addEventListener('mousemove',e=>{mLx=e.clientX/W;mLy=e.clientY/H;});
-
-// Perlin noise
-const perm=[...Array(256)].map((_,i)=>i).sort(()=>Math.random()-.5);
-const p=[...perm,...perm];
-function fade(t){return t*t*t*(t*(t*6-15)+10)}
-function lerp(t,a,b){return a+t*(b-a)}
-function grad(h,x,y){const v=h&3;const u=v<2?x:y,w=v<2?y:x;return((h&1)?-u:u)+((h&2)?-w:w)}
-function noise(x,y){
-  const X=Math.floor(x)&255,Y=Math.floor(y)&255;
-  x-=Math.floor(x);y-=Math.floor(y);
-  const u=fade(x),v=fade(y);
-  return lerp(v,lerp(u,grad(p[p[X]+Y],x,y),grad(p[p[X+1]+Y],x-1,y)),
-                lerp(u,grad(p[p[X]+Y+1],x,y-1),grad(p[p[X+1]+Y+1],x-1,y-1)));
-}
-
-function drawBg(){
-  t+=.0007;
-  // Leather grain — slightly brighter than before
-  const id=ctx.createImageData(W,H);
-  const d=id.data;
-  for(let y=0;y<H;y+=2){
-    for(let x=0;x<W;x+=2){
-      const n1=noise(x/W*3.5,y/H*3+t)*.5+.5;
-      const n2=noise(x/W*7,y/H*5.5+t*.8)*.5+.5;
-      const g=n1*.65+n2*.35;
-      // Slightly brighter base (+4/5 luminosity)
-      const r=Math.floor(12+g*22);
-      const gv=Math.floor(12+g*36+8);
-      const b=Math.floor(12+g*15);
-      for(let dy=0;dy<2&&y+dy<H;dy++){
-        for(let dx=0;dx<2&&x+dx<W;dx++){
-          const i=((y+dy)*W+(x+dx))*4;
-          d[i]=r;d[i+1]=gv;d[i+2]=b;d[i+3]=255;
-        }
-      }
-    }
-  }
-  ctx.putImageData(id,0,0);
-  // Mouse radial light
-  const g1=ctx.createRadialGradient(mLx*W,mLy*H,0,mLx*W,mLy*H,Math.max(W,H)*.65);
-  g1.addColorStop(0,'rgba(27,74,46,.2)');
-  g1.addColorStop(.5,'rgba(9,58,34,.05)');
-  g1.addColorStop(1,'rgba(0,0,0,.42)');
-  ctx.fillStyle=g1;ctx.fillRect(0,0,W,H);
-  // Vignette
-  const vg=ctx.createRadialGradient(W/2,H/2,0,W/2,H/2,Math.max(W,H)*.72);
-  vg.addColorStop(0,'transparent');
-  vg.addColorStop(.55,'rgba(0,0,0,.18)');
-  vg.addColorStop(1,'rgba(0,0,0,.68)');
-  ctx.fillStyle=vg;ctx.fillRect(0,0,W,H);
-  requestAnimationFrame(drawBg);
-}
-drawBg();
-
-// ── TIMECODE
-const tc=document.getElementById('timecode');
-let frames=0;
+// ─── TIMECODE
+const tc=document.getElementById('tc');
+let fr=0;
 setInterval(()=>{
-  frames++;
-  const f=frames%30;
-  const s=Math.floor(frames/30)%60;
-  const m=Math.floor(frames/1800)%60;
-  const h=Math.floor(frames/108000);
+  fr++;const f=fr%30,s=Math.floor(fr/30)%60,m=Math.floor(fr/1800)%60,h=Math.floor(fr/108000);
   tc.textContent=[h,m,s,f].map(v=>String(v).padStart(2,'0')).join(':');
 },33);
 
-// ── PRELOADER
-const preBar=document.getElementById('preBar');
-const prePct=document.getElementById('prePct');
-const pre=document.getElementById('preloader');
-const letters=pre.querySelectorAll('.pre-logo span');
-let pct=0;
-gsap.to(letters,{y:0,duration:.55,stagger:.055,ease:'power3.out',delay:.15});
-const ldi=setInterval(()=>{
-  pct+=Math.random()*5+2;
-  if(pct>100)pct=100;
-  preBar.style.width=pct+'%';
-  prePct.textContent=Math.floor(pct)+'%';
-  if(pct>=100){
-    clearInterval(ldi);
-    setTimeout(()=>{
-      gsap.to(pre,{opacity:0,duration:.7,ease:'power2.inOut',onComplete:()=>{
-        pre.style.display='none';
-        initPage();
-      }});
-    },280);
+// ─── APERTURE CANVAS — camera lens iris
+const aC=document.getElementById('aperture-canvas'),aX=aC.getContext('2d');
+let aT=0;
+function drawAperture(){
+  aX.clearRect(0,0,320,320);
+  aT+=.006;
+  const cx=160,cy=160,blades=8;
+  // Outer ring
+  aX.beginPath();aX.arc(cx,cy,140,0,Math.PI*2);
+  aX.strokeStyle='rgba(244,241,235,.08)';aX.lineWidth=1;aX.stroke();
+  aX.beginPath();aX.arc(cx,cy,136,0,Math.PI*2);
+  aX.strokeStyle='rgba(201,169,110,.12)';aX.lineWidth=.5;aX.stroke();
+
+  // Iris blades
+  for(let i=0;i<blades;i++){
+    const angle=(i/blades)*Math.PI*2+aT;
+    const angle2=((i+.5)/blades)*Math.PI*2+aT;
+    const r1=32+Math.sin(aT*2+i)*.5,r2=115;
+    const x1=cx+Math.cos(angle)*r1,y1=cy+Math.sin(angle)*r1;
+    const x2=cx+Math.cos(angle2)*r2,y2=cy+Math.sin(angle2)*r2;
+    const x3=cx+Math.cos(angle+Math.PI*2/blades)*r1,y3=cy+Math.sin(angle+Math.PI*2/blades)*r1;
+    aX.beginPath();
+    aX.moveTo(x1,y1);
+    aX.quadraticCurveTo(cx+Math.cos(angle+Math.PI/blades)*80,cy+Math.sin(angle+Math.PI/blades)*80,x2,y2);
+    aX.lineTo(x3,y3);
+    aX.closePath();
+    const bGrd=aX.createLinearGradient(cx,cy-100,cx,cy+100);
+    bGrd.addColorStop(0,'rgba(9,58,34,.6)');
+    bGrd.addColorStop(.5,'rgba(27,74,46,.35)');
+    bGrd.addColorStop(1,'rgba(9,58,34,.15)');
+    aX.fillStyle=bGrd;aX.fill();
+    aX.strokeStyle='rgba(201,169,110,.15)';aX.lineWidth=.5;aX.stroke();
   }
-},50);
+  // Inner aperture hole
+  aX.beginPath();aX.arc(cx,cy,30,0,Math.PI*2);
+  const hGrd=aX.createRadialGradient(cx,cy,0,cx,cy,30);
+  hGrd.addColorStop(0,'rgba(2,8,6,1)');hGrd.addColorStop(.7,'rgba(9,58,34,.4)');hGrd.addColorStop(1,'transparent');
+  aX.fillStyle=hGrd;aX.fill();
+  // Center dot
+  aX.beginPath();aX.arc(cx,cy,3,0,Math.PI*2);
+  aX.fillStyle='rgba(201,169,110,.4)';aX.fill();
+  // Rotating crosshair
+  aX.save();aX.translate(cx,cy);aX.rotate(aT*.5);
+  aX.strokeStyle='rgba(244,241,235,.06)';aX.lineWidth=.5;
+  aX.beginPath();aX.moveTo(-130,0);aX.lineTo(130,0);aX.stroke();
+  aX.beginPath();aX.moveTo(0,-130);aX.lineTo(0,130);aX.stroke();
+  aX.restore();
+  // Outer glow
+  const gGrd=aX.createRadialGradient(cx,cy,110,cx,cy,155);
+  gGrd.addColorStop(0,'rgba(9,58,34,.18)');gGrd.addColorStop(1,'transparent');
+  aX.beginPath();aX.arc(cx,cy,152,0,Math.PI*2);aX.fillStyle=gGrd;aX.fill();
+  requestAnimationFrame(drawAperture);
+}
+drawAperture();
 
-function initPage(){
-  gsap.to('.nav-logo',{opacity:1,duration:.9,ease:'power2.out'});
-  gsap.to('.hero-eyebrow',{opacity:1,y:0,duration:.9,delay:.25,ease:'power3.out'});
-  gsap.to('.hero-title .line span',{y:0,duration:1.1,stagger:.1,ease:'power4.out',delay:.4});
-  gsap.to('.hero-bottom',{opacity:1,y:0,duration:.9,delay:.9,ease:'power3.out'});
-  gsap.to('.hero-studio-badge',{opacity:1,duration:.8,delay:1.2,ease:'power2.out'});
-  gsap.to('.hero-timecode',{opacity:1,duration:.8,delay:1.4,ease:'power2.out'});
+// ─── STUDIO FLOAT CANVAS — same aperture, larger, amber tint
+const sfC=document.getElementById('studio-float-canvas'),sfX=sfC.getContext('2d');
+let sfT=0;
+function drawStudioFloat(){
+  sfX.clearRect(0,0,560,560);sfT+=.004;
+  const cx=280,cy=280,blades=12;
+  sfX.beginPath();sfX.arc(cx,cy,240,0,Math.PI*2);
+  sfX.strokeStyle='rgba(200,134,74,.06)';sfX.lineWidth=1;sfX.stroke();
+  sfX.beginPath();sfX.arc(cx,cy,235,0,Math.PI*2);
+  sfX.strokeStyle='rgba(200,134,74,.04)';sfX.lineWidth=.5;sfX.stroke();
+  for(let i=0;i<blades;i++){
+    const angle=(i/blades)*Math.PI*2+sfT;
+    const angle2=((i+.5)/blades)*Math.PI*2+sfT;
+    const r1=45,r2=200;
+    const x1=cx+Math.cos(angle)*r1,y1=cy+Math.sin(angle)*r1;
+    const x2=cx+Math.cos(angle2)*r2,y2=cy+Math.sin(angle2)*r2;
+    const x3=cx+Math.cos(angle+Math.PI*2/blades)*r1,y3=cy+Math.sin(angle+Math.PI*2/blades)*r1;
+    sfX.beginPath();sfX.moveTo(x1,y1);
+    sfX.quadraticCurveTo(cx+Math.cos(angle+Math.PI/blades)*140,cy+Math.sin(angle+Math.PI/blades)*140,x2,y2);
+    sfX.lineTo(x3,y3);sfX.closePath();
+    const g=sfX.createLinearGradient(cx-100,cy,cx+100,cy);
+    g.addColorStop(0,'rgba(200,134,74,.25)');g.addColorStop(.5,'rgba(180,100,40,.12)');g.addColorStop(1,'rgba(200,134,74,.05)');
+    sfX.fillStyle=g;sfX.fill();
+    sfX.strokeStyle='rgba(200,134,74,.08)';sfX.lineWidth=.5;sfX.stroke();
+  }
+  sfX.beginPath();sfX.arc(cx,cy,46,0,Math.PI*2);
+  sfX.fillStyle='rgba(2,8,6,.95)';sfX.fill();
+  requestAnimationFrame(drawStudioFloat);
+}
+drawStudioFloat();
 
-  gsap.utils.toArray('.reveal').forEach(el=>{
-    gsap.to(el,{opacity:1,y:0,duration:.9,ease:'power3.out',
-      scrollTrigger:{trigger:el,start:'top 88%'}});
-  });
-  gsap.utils.toArray('.reveal-left').forEach(el=>{
-    gsap.to(el,{opacity:1,x:0,duration:.9,ease:'power3.out',
-      scrollTrigger:{trigger:el,start:'top 85%'}});
-  });
-  gsap.utils.toArray('.reveal-scale').forEach(el=>{
-    gsap.to(el,{opacity:1,scale:1,duration:1.1,ease:'power3.out',
-      scrollTrigger:{trigger:el,start:'top 85%'}});
-  });
-
-  // Services stagger
-  gsap.utils.toArray('.service-card').forEach((c,i)=>{
-    gsap.fromTo(c,{opacity:0,y:44},{opacity:1,y:0,duration:.8,ease:'power3.out',delay:i*.09,
-      scrollTrigger:{trigger:'#services',start:'top 75%'}});
-  });
-  // Founder parallax
-  gsap.to('.founder-right',{y:-50,ease:'none',
-    scrollTrigger:{trigger:'#founder',start:'top bottom',end:'bottom top',scrub:1.2}});
-  // Hero parallax
-  gsap.to('.hero-title',{y:70,ease:'none',
-    scrollTrigger:{trigger:'#hero',start:'top top',end:'bottom top',scrub:.8}});
+// ─── GLOBE SVG — world section
+// (CSS-only animated globe via SVG injection)
+const fworld=document.getElementById('float-world');
+if(fworld){
+  fworld.innerHTML=`<svg viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg" style="opacity:.7">
+    <defs>
+      <radialGradient id="gg" cx="40%" cy="35%">
+        <stop offset="0%" stop-color="rgba(27,74,46,.5)"/>
+        <stop offset="100%" stop-color="rgba(2,8,6,.9)"/>
+      </radialGradient>
+    </defs>
+    <circle cx="120" cy="120" r="108" fill="url(#gg)" stroke="rgba(42,102,66,.2)" stroke-width="1"/>
+    <ellipse cx="120" cy="120" rx="50" ry="108" fill="none" stroke="rgba(42,102,66,.15)" stroke-width=".8"/>
+    <ellipse cx="120" cy="120" rx="108" ry="40" fill="none" stroke="rgba(42,102,66,.15)" stroke-width=".8"/>
+    <ellipse cx="120" cy="120" rx="108" ry="70" fill="none" stroke="rgba(42,102,66,.1)" stroke-width=".5"/>
+    <circle cx="72" cy="95" r="3" fill="rgba(201,169,110,.5)"/>
+    <circle cx="155" cy="80" r="2.5" fill="rgba(201,169,110,.4)"/>
+    <circle cx="180" cy="130" r="2" fill="rgba(201,169,110,.35)"/>
+    <circle cx="65" cy="140" r="2" fill="rgba(201,169,110,.35)"/>
+    <circle cx="120" cy="160" r="3" fill="rgba(201,169,110,.5)"/>
+    <line x1="72" y1="95" x2="155" y2="80" stroke="rgba(201,169,110,.15)" stroke-width=".5"/>
+    <line x1="155" y1="80" x2="180" y2="130" stroke="rgba(201,169,110,.12)" stroke-width=".5"/>
+    <line x1="72" y1="95" x2="65" y2="140" stroke="rgba(201,169,110,.12)" stroke-width=".5"/>
+    <line x1="65" y1="140" x2="120" y2="160" stroke="rgba(201,169,110,.15)" stroke-width=".5"/>
+    <line x1="120" y1="160" x2="180" y2="130" stroke="rgba(201,169,110,.12)" stroke-width=".5"/>
+    <circle cx="120" cy="120" r="108" fill="none" stroke="rgba(42,102,66,.25)" stroke-width="1.5"/>
+  </svg>`;
 }
 
-// ── TABS
-document.querySelectorAll('.tab-btn').forEach(btn=>{
-  btn.addEventListener('click',()=>{
-    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-    document.querySelectorAll('.portfolio-panel').forEach(p=>p.classList.remove('active'));
-    btn.classList.add('active');
-    document.getElementById('tab-'+btn.dataset.tab).classList.add('active');
-    // Re-trigger reveal for newly shown items
-    gsap.fromTo('#tab-'+btn.dataset.tab+' .reveal',
-      {opacity:0,y:28},{opacity:1,y:0,duration:.7,stagger:.06,ease:'power3.out'});
+// ─── LOADER
+const ldBar=document.getElementById('ldBar'),ldPct=document.getElementById('ldPct'),ld=document.getElementById('loader');
+const letters=ld.querySelectorAll('.ld-word span');
+let pct=0;
+gsap.to(letters,{y:0,duration:.5,stagger:.05,ease:'power3.out',delay:.1});
+const ldi=setInterval(()=>{
+  pct+=Math.random()*5+2;if(pct>100)pct=100;
+  ldBar.style.width=pct+'%';ldPct.textContent=Math.floor(pct)+'%';
+  if(pct>=100){clearInterval(ldi);setTimeout(()=>{
+    gsap.to(ld,{opacity:0,duration:.65,ease:'power2.inOut',onComplete:()=>{ld.style.display='none';init()}});
+  },250);}
+},46);
+
+function init(){
+  // Nav
+  gsap.to('.nav-logo',{opacity:1,duration:.9,ease:'power2.out'});
+  // HUD corners
+  gsap.to('.hud-corner',{opacity:1,duration:.8,delay:.3,stagger:.1,ease:'power2.out'});
+  // Aperture
+  gsap.to('#aperture',{opacity:1,scale:1,duration:1.2,delay:.5,ease:'power3.out'});
+  // Eyebrow
+  gsap.to('.hero-eyebrow',{opacity:1,y:0,duration:.8,delay:.8,ease:'power3.out'});
+  // Title lines
+  gsap.to('.hero-title .line span',{y:0,duration:1,stagger:.1,ease:'power4.out',delay:1});
+  // Tagline
+  gsap.to('.hero-tagline',{opacity:1,y:0,duration:.8,delay:1.5,ease:'power3.out'});
+  // Scroll + TC
+  gsap.to(['.hero-scroll','.hero-tc'],{opacity:1,duration:.8,delay:1.8,ease:'power2.out'});
+
+  // Chapter backgrounds — parallax
+  document.querySelectorAll('.chapter').forEach(ch=>{
+    const bg=ch.querySelector('.ch-bg');
+    if(!bg)return;
+    gsap.to(bg,{yPercent:-12,ease:'none',
+      scrollTrigger:{trigger:ch,start:'top bottom',end:'bottom top',scrub:1.2}});
+    // Clip reveal — Resn-style Z-axis emerge
+    gsap.fromTo(ch,
+      {clipPath:'inset(8% 0 8% 0)'},
+      {clipPath:'inset(0% 0 0% 0)',ease:'power2.out',
+        scrollTrigger:{trigger:ch,start:'top 90%',end:'top 10%',scrub:.7}}
+    );
+  });
+
+  // Floating visuals
+  gsap.to('#float-studio',{opacity:1,x:0,duration:1,ease:'power3.out',
+    scrollTrigger:{trigger:'#ch-studio',start:'top 70%'}});
+  gsap.to('#float-social',{opacity:1,x:0,duration:1,ease:'power3.out',
+    scrollTrigger:{trigger:'#ch-social',start:'top 70%'}});
+  gsap.to('#float-web',{opacity:1,x:0,duration:1,ease:'power3.out',
+    scrollTrigger:{trigger:'#ch-web',start:'top 70%'}});
+  gsap.to('#float-world',{opacity:1,duration:1,ease:'power3.out',
+    scrollTrigger:{trigger:'#ch-world',start:'top 70%'}});
+
+  // Reveals
+  gsap.utils.toArray('.rv').forEach(el=>{
+    gsap.to(el,{opacity:1,y:0,x:0,duration:.9,ease:'power3.out',
+      scrollTrigger:{trigger:el,start:'top 88%'}});
+  });
+
+  // Process steps stagger
+  gsap.utils.toArray('.proc-step').forEach((s,i)=>{
+    gsap.fromTo(s,{opacity:0,y:40},{opacity:1,y:0,duration:.8,ease:'power3.out',delay:i*.08,
+      scrollTrigger:{trigger:'#process',start:'top 75%'}});
+  });
+
+  // Hero parallax
+  gsap.to('.hero-title',{y:80,ease:'none',
+    scrollTrigger:{trigger:'#hero',start:'top top',end:'bottom top',scrub:.9}});
+  gsap.to('#aperture',{y:50,rotation:15,ease:'none',
+    scrollTrigger:{trigger:'#hero',start:'top top',end:'bottom top',scrub:1.2}});
+  gsap.to('.hero-tagline',{y:40,ease:'none',
+    scrollTrigger:{trigger:'#hero',start:'top top',end:'bottom top',scrub:.6}});
+
+  // Work items stagger
+  gsap.utils.toArray('.wi').forEach((w,i)=>{
+    gsap.fromTo(w,{opacity:0,y:30},{opacity:1,y:0,duration:.8,ease:'power3.out',delay:i*.07,
+      scrollTrigger:{trigger:'#work',start:'top 80%'}});
+  });
+}
+
+// ─── PANELS
+document.querySelectorAll('[data-open]').forEach(el=>{
+  el.addEventListener('click',e=>{
+    e.preventDefault();
+    const p=document.getElementById(el.dataset.open);
+    p.classList.add('open');
+    gsap.fromTo(p,{opacity:0},{opacity:1,duration:.5,ease:'power2.out'});
+  });
+});
+document.querySelectorAll('[data-close]').forEach(el=>{
+  el.addEventListener('click',()=>{
+    const p=document.getElementById(el.dataset.close);
+    gsap.to(p,{opacity:0,duration:.4,ease:'power2.in',onComplete:()=>p.classList.remove('open')});
   });
 });
 
-// ── LIGHTBOX
-const lb=document.getElementById('lightbox');
-const lbClose=document.getElementById('lbClose');
-const lbTitle=document.getElementById('lbTitle');
-const lbType=document.getElementById('lbType');
-const lbPh=document.getElementById('lbPlaceholder');
-
-document.querySelectorAll('.reel-item').forEach(item=>{
-  item.addEventListener('click',()=>{
-    lbTitle.textContent=item.dataset.title||'Untitled';
-    lbType.textContent=item.dataset.type||'';
-    lbPh.textContent='Video asset coming soon.\nDrop your footage here.';
-    lb.classList.add('open');
-  });
-});
-lbClose.addEventListener('click',()=>lb.classList.remove('open'));
-lb.addEventListener('click',e=>{if(e.target===lb)lb.classList.remove('open');});
-
-// ── SMOOTH SCROLL
+// ─── SMOOTH SCROLL
 document.querySelectorAll('a[href^="#"]').forEach(a=>{
   a.addEventListener('click',e=>{
-    e.preventDefault();
     const t=document.querySelector(a.getAttribute('href'));
-    if(t)t.scrollIntoView({behavior:'smooth'});
+    if(t){e.preventDefault();t.scrollIntoView({behavior:'smooth'});}
   });
 });
 </script>
